@@ -371,6 +371,18 @@ body[data-read="easy"] .msg,body[data-read="easy"] .fcFace{font-family:'Lexend',
 .shelfHead h2{margin-bottom:0}
 
 .aTitle{font-size:15px;font-weight:700;margin:0}
+
+/* ---------- Focus / Split view ---------- */
+#panelTop{display:flex;align-items:stretch;border-bottom:1px solid var(--line);flex-shrink:0}
+#panelTabs{border-bottom:none;flex:1;min-width:0}
+.focusBtn{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--blue);padding:0 12px;white-space:nowrap;border-left:1px solid var(--line);background:var(--paper)}
+.focusBtn:hover{background:var(--blue-soft)}
+body.focus-mode #readerCol{display:none}
+body.focus-mode #panel{width:100%;min-width:0;flex:1;border-left:none}
+body.focus-mode .pv-pad{max-width:940px;margin-left:auto;margin-right:auto}
+body.focus-mode #chatLog,body.focus-mode #chatBox{max-width:900px;margin-left:auto;margin-right:auto;width:100%}
+body.focus-mode #progressSub{max-width:940px;margin-left:auto;margin-right:auto}
+@media(max-width:860px){ body.focus-mode #panel{height:100%} }
 </style>
 </head>
 <body data-theme="light">
@@ -436,7 +448,6 @@ body[data-read="easy"] .msg,body[data-read="easy"] .fcFace{font-family:'Lexend',
 
     <!-- Reader -->
     <div id="reader" style="display:none;flex:1;flex-direction:column;min-height:0">
-      <h1 class="sr-only">DigiBook AI reader</h1>
       <div id="readerBar">
         <button class="iconbtn" id="prevBtn" title="Previous page">‹</button>
         <button class="iconbtn" id="nextBtn" title="Next page">›</button>
@@ -461,11 +472,15 @@ body[data-read="easy"] .msg,body[data-read="easy"] .fcFace{font-family:'Lexend',
 
   <!-- Right panel -->
   <div id="panel" role="complementary" aria-label="Learning tools">
-    <div id="panelTabs" role="tablist" aria-label="Panel views">
-      <button data-tab="learn" class="active" role="tab" aria-selected="true"><span class="tIco" aria-hidden="true">📖</span>Learn</button>
-      <button data-tab="quiz" role="tab" aria-selected="false"><span class="tIco" aria-hidden="true">❓</span>Quiz</button>
-      <button data-tab="progress" role="tab" aria-selected="false"><span class="tIco" aria-hidden="true">📊</span>Progress</button>
-      <button data-tab="about" role="tab" aria-selected="false"><span class="tIco" aria-hidden="true">ⓘ</span>About</button>
+    <h1 class="sr-only">DigiBook AI learning workspace</h1>
+    <div id="panelTop">
+      <div id="panelTabs" role="tablist" aria-label="Panel views">
+        <button data-tab="learn" class="active" role="tab" aria-selected="true"><span class="tIco" aria-hidden="true">📖</span>Learn</button>
+        <button data-tab="quiz" role="tab" aria-selected="false"><span class="tIco" aria-hidden="true">❓</span>Quiz</button>
+        <button data-tab="progress" role="tab" aria-selected="false"><span class="tIco" aria-hidden="true">📊</span>Progress</button>
+        <button data-tab="about" role="tab" aria-selected="false"><span class="tIco" aria-hidden="true">ⓘ</span>About</button>
+      </div>
+      <button id="focusBtn" class="focusBtn" title="Focus mode" aria-label="Expand to focus mode" aria-pressed="false" style="display:none"><span aria-hidden="true">⛶</span> Focus</button>
     </div>
 
     <div class="panelView active" id="pv-learn">
@@ -989,12 +1004,15 @@ function enterReader(){
   $('#library').style.display='none';
   $('#reader').style.display='flex';
   $('#bookTitleBar').textContent=S.book.title;
+  const fb=$('#focusBtn'); if(fb)fb.style.display='inline-flex';
   startReadTimer();
 }
 function goLibrary(){
+  toggleFocus(false);
   $('#reader').style.display='none';
   $('#library').style.display='flex';
   $('#bookTitleBar').textContent='';
+  const fb=$('#focusBtn'); if(fb)fb.style.display='none';
   setDemo(false); renderShelf(); stopReadTimer();
 }
 function pageCount(){ return S.book?(S.book.type==='pdf'?S.book.pdf.numPages:S.book.pages.length):0 }
@@ -1618,6 +1636,7 @@ function progressSub(name){
   else if(name==='stats')updateStats();
   else if(name==='map')renderGraph();
   else if(name==='adaptive')renderAdaptive();
+  if(window.innerWidth<=860 && S.book && (name==='map'||name==='adaptive')) toggleFocus(true);
 }
 
 /* ============ Highlight & bookmark ============ */
@@ -2008,6 +2027,22 @@ function downloadStudyReport(){
   win.document.close(); toast('Study report opened');
 }
 
+/* ============ Focus / Split view ============ */
+function toggleFocus(force){
+  const on=(force!==undefined)?force:!document.body.classList.contains('focus-mode');
+  const sc=$('#readerScroll');
+  if(on && sc) S._scrollTop=sc.scrollTop;                 // remember reading position
+  document.body.classList.toggle('focus-mode',on);
+  const rc=$('#readerCol'),pn=$('#panel');
+  if(rc)rc.setAttribute('role',on?'presentation':'main');
+  if(pn)pn.setAttribute('role',on?'main':'complementary');
+  const fb=$('#focusBtn');
+  if(fb){ fb.innerHTML=on?'<span aria-hidden="true">←</span> Back to Split View':'<span aria-hidden="true">⛶</span> Focus';
+    fb.setAttribute('aria-label',on?'Back to split view':'Expand to focus mode'); fb.setAttribute('aria-pressed',on?'true':'false'); }
+  if(!on && sc && S._scrollTop!=null) sc.scrollTop=S._scrollTop;   // restore reading position
+  if($('#pv-progress')&&$('#pv-progress').classList.contains('active') && S.progressSub==='map') setTimeout(renderGraph,40);
+}
+
 /* ============ Wire up UI ============ */
 $('#pickBtn').onclick=()=>$('#fileInput').click();
 $('#fileInput').onchange=e=>{ if(e.target.files[0])openFile(e.target.files[0]); };
@@ -2021,6 +2056,7 @@ dz.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f)openFile(f
 
 $('#homeBtn').onclick=goLibrary;
 $('#homeBrand').onclick=goLibrary;
+$('#focusBtn').onclick=()=>toggleFocus();
 $('#exitReadBtn').onclick=goLibrary;
 $('#prevBtn').onclick=()=>gotoPage(S.page-1);
 $('#nextBtn').onclick=()=>gotoPage(S.page+1);
