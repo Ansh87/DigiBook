@@ -930,12 +930,12 @@ function splitPages(raw){
 }
 function loadText(pages,title,type){
   S.book={id:'b'+Date.now(),title,type,pages:pages.map(p=> typeof p==='string'?{text:p}:{text:p.text||'',img:p.img,credit:p.credit})};
-  S.page=0; setDemo(false); enterReader(); renderTextPage();
+  S.page=0; S.quiz=null; setDemo(false); enterReader(); renderTextPage();
 }
 async function loadPDF(buf,title){
   const pdf=await pdfjsLib.getDocument({data:buf}).promise;
   S.book={id:'b'+Date.now(),title:title.replace(/\.pdf$/i,''),type:'pdf',pdf,pages:new Array(pdf.numPages)};
-  S.page=0; enterReader(); await renderPDFPage();
+  S.page=0; S.quiz=null; enterReader(); await renderPDFPage();
 }
 
 function addToShelf(){
@@ -1266,6 +1266,17 @@ function renderModel(){
 }
 
 /* ============ Quiz ============ */
+function renderQuizIdle(){
+  const pad=$('#quizPad'); if(!pad)return;
+  if(!S.book){
+    pad.innerHTML=`<div class="card"><h4>Quiz</h4><p class="hint">Open a lesson and DigiBook will build a short quiz from what you're reading. Your results feed your mastery model and the Adaptive Path.</p><button class="btn" id="qOpenDemo" style="margin-top:12px">Open a demo lesson</button></div>`;
+    const d=$('#qOpenDemo'); if(d)d.onclick=()=>loadDemo(DEFAULT_DEMO);
+  } else {
+    const focused=aAssessed().length?", focused on the concepts you're still building":"";
+    pad.innerHTML=`<div class="card"><h4>Quiz</h4><p class="hint">Ready when you are. DigiBook will generate a short quiz from this page${focused}, then use your answers to update your mastery.</p><button class="btn" id="qGen" style="margin-top:12px">Quiz me on this page</button><p class="hint" style="margin-top:9px">Tip: you can also press <b>Quiz me on this</b> in the reader toolbar.</p></div>`;
+    const g=$('#qGen'); if(g)g.onclick=()=>generateQuiz();
+  }
+}
 async function generateQuiz(){
   const pad=$('#quizPad'); switchTab('quiz');
   if(!S.book){pad.innerHTML='<div class="card"><p class="hint">Open a book first, then generate a quiz.</p></div>';return;}
@@ -1626,6 +1637,7 @@ function switchTab(name){
   $$('.panelView').forEach(v=>v.classList.toggle('active',v.id==='pv-'+name));
   if(name==='progress')progressSub(S.progressSub||'mastery');
   if(name==='about')renderAbout();
+  if(name==='quiz' && !S.quiz)renderQuizIdle();
 }
 function progressSub(name){
   S.progressSub=name;
@@ -2093,7 +2105,7 @@ $('#fsMinus').onclick=()=>{readFS=Math.max(14,readFS-1);document.documentElement
   const th=localStorage.getItem(LS+'_theme'); if(th)document.body.dataset.theme=th;
   if(localStorage.getItem(LS+'_read')==='easy'){ document.body.dataset.read='easy'; const rb=$('#readFontBtn'); if(rb){rb.setAttribute('aria-pressed','true');rb.style.background='var(--hl)';rb.style.color='#22303F';} }
   const _lv=localStorage.getItem(LS+'_level'); if(_lv){ S.level=_lv; const ls=$('#levelSel'); if(ls)ls.value=_lv; }
-  load(); renderChat(); renderModel(); renderShelf(); renderDemoLibrary(); renderAbout(); updateStats(); renderCards(); renderGraph();
+  load(); renderChat(); renderModel(); renderShelf(); renderDemoLibrary(); renderAbout(); updateStats(); renderCards(); renderGraph(); renderQuizIdle();
   // ping AI proxy quietly to set pill
   callAI(TUTOR_SYS,'Reply with the single word: ready').then(r=>{ setAI(!!r); });
   document.documentElement.style.setProperty('--readfs',readFS+'px');
