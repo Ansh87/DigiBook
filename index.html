@@ -409,6 +409,8 @@ body.focus-mode #progressSub{max-width:940px;margin-left:auto;margin-right:auto}
 .acxSeg{display:inline-flex;border:1px solid var(--line);border-radius:99px;overflow:hidden}
 .acxSeg button{font-size:12px;font-weight:600;padding:6px 11px;color:var(--ink-soft);background:var(--paper)}
 .acxSeg button.on{background:var(--hl);color:#22303F}
+.acxVoiceSel{font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);max-width:56%}
+.acxVoiceSel:disabled{opacity:.55}
 .acxActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
 .acxGuide{margin-top:12px;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
 /* Read-aloud bar */
@@ -570,6 +572,8 @@ body.acx-motion #textPage p,body.acx-motion #textPage h2{transition:none}
         <button id="raStop" aria-label="Stop reading">■</button>
         <label class="sr-only" for="raSpeed">Reading speed</label>
         <select id="raSpeed" aria-label="Reading speed"><option value="0.75">0.75x</option><option value="1" selected>1.0x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option></select>
+        <label class="sr-only" for="raVoice">Reading voice</label>
+        <select id="raVoice" aria-label="Reading voice"></select>
       </div>
       <div id="readerScroll">
         <div id="progressRail"><div id="progressFill"></div></div>
@@ -704,7 +708,7 @@ const S = {
   bookmarks:{}, highlights:{},
   adaptive:{signals:{},improvements:[],completed:[]},
   srs:{},
-  acx:{readAloud:false,autoReadTutor:false,speechRate:1,highContrast:false,textSize:'default',spacing:'default',easyFont:false,readingRuler:false,easyInteraction:false,voiceCommands:false,reduceMotion:false},
+  acx:{readAloud:false,autoReadTutor:false,speechRate:1,voice:'default',highContrast:false,textSize:'default',spacing:'default',easyFont:false,readingRuler:false,easyInteraction:false,voiceCommands:false,reduceMotion:false},
   mapView:'graph',
   level:'standard',
   aiOK:false,
@@ -2202,6 +2206,57 @@ const TTS_OK = !!TTS && (typeof SpeechSynthesisUtterance!=='undefined');
 const SR_CLASS = (typeof window!=='undefined') ? (window.SpeechRecognition||window.webkitSpeechRecognition) : null;
 const SR_OK = !!SR_CLASS;
 
+/* ---------- Voice presets for Read aloud ----------
+   The browser only ships whatever voices the device's operating system has,
+   so we can't guarantee named celebrity voices. Instead we pick a suitable
+   male / female base voice from the device and shape age and character with
+   pitch and rate. Everything degrades to the default system voice if a match
+   isn't found. No real person is impersonated. */
+const VOICE_PRESETS = {
+  default:     {label:'Default',        group:'voices',     g:null,    pitch:1,    rate:1},
+  female:      {label:'Female (Adult)', group:'voices',     g:'female',pitch:1,    rate:1},
+  male:        {label:'Male (Adult)',   group:'voices',     g:'male',  pitch:0.92, rate:0.98},
+  femaleKid:   {label:'Female (Kid)',   group:'voices',     g:'female',pitch:1.5,  rate:1.06},
+  maleKid:     {label:'Male (Kid)',     group:'voices',     g:'male',  pitch:1.45, rate:1.06},
+  narrator:    {label:'Narrator',       group:'characters', g:'male',  pitch:0.8,  rate:0.86},
+  storyteller: {label:'Storyteller',    group:'characters', g:'female',pitch:1.12, rate:0.94},
+  robot:       {label:'Robot',          group:'characters', g:null,    pitch:0.55, rate:0.9},
+  chipmunk:    {label:'Chipmunk',       group:'characters', g:null,    pitch:1.8,  rate:1.35},
+};
+const FEMALE_RE = /(female|zira|samantha|victoria|susan|karen|moira|tessa|fiona|serena|allison|ava|catherine|kate|hazel|sonia|linda|heera|women|woman|girl|libby|aria|jenny|michelle|nova|shimmer)/i;
+const MALE_RE   = /(\bmale\b|david|mark|george|james|daniel|fred|alex|thomas|arthur|ryan|guy|eric|brian|rishi|prabhat|man\b|boy|liam|william|ravi|tony|christopher)/i;
+let VOICES_CACHE = [];
+function loadVoices(){ try{ VOICES_CACHE = (TTS && TTS.getVoices) ? TTS.getVoices() : []; }catch(e){ VOICES_CACHE=[]; } return VOICES_CACHE; }
+function pickVoice(gender){
+  const list = VOICES_CACHE.length ? VOICES_CACHE : loadVoices();
+  if(!list.length) return null;
+  const en = list.filter(v=>/^en(-|_|$)/i.test(v.lang||''));
+  const pool = en.length ? en : list;
+  if(gender==='female'){ return pool.find(v=>FEMALE_RE.test(v.name)) || pool.find(v=>!MALE_RE.test(v.name)) || pool[0]; }
+  if(gender==='male'){   return pool.find(v=>MALE_RE.test(v.name))   || pool.find(v=>!FEMALE_RE.test(v.name)) || pool[0]; }
+  return null; // default -> let the engine choose
+}
+function raApplyVoice(u){
+  const p = VOICE_PRESETS[S.acx.voice] || VOICE_PRESETS.default;
+  const v = pickVoice(p.g);
+  if(v) u.voice = v;
+  u.pitch = Math.max(0, Math.min(2, p.pitch));
+  const base = parseFloat(S.acx.speechRate)||1;
+  u.rate = Math.max(0.5, Math.min(2, base * p.rate));
+  return u;
+}
+function voiceOptionsHTML(sel){
+  const cur = sel || S.acx.voice || 'default';
+  const grp = (name,keys)=>`<optgroup label="${name}">`+keys.map(k=>`<option value="${k}"${k===cur?' selected':''}>${esc(VOICE_PRESETS[k].label)}</option>`).join('')+`</optgroup>`;
+  return grp('Voices',['default','female','male','femaleKid','maleKid'])+grp('Character styles',['narrator','storyteller','robot','chipmunk']);
+}
+function syncVoiceControls(){
+  const html = voiceOptionsHTML();
+  const rv=$('#raVoice'); if(rv){ rv.innerHTML=html; rv.value=S.acx.voice||'default'; }
+  const av=$('#acxVoice'); if(av){ av.innerHTML=html; av.value=S.acx.voice||'default'; }
+}
+function raSetVoice(v){ if(!VOICE_PRESETS[v]) v='default'; S.acx.voice=v; acxSave(); syncVoiceControls(); if(raState.playing) raSpeakChunk(); announce('Reading voice '+VOICE_PRESETS[v].label); }
+
 function acxLoad(){ try{ const d=JSON.parse(localStorage.getItem(LS+'_acx')||'null'); if(d)Object.assign(S.acx,d);}catch(e){} if(localStorage.getItem(LS+'_read')==='easy')S.acx.easyFont=true; }
 function acxSave(){ try{ localStorage.setItem(LS+'_acx',JSON.stringify(S.acx)); }catch(e){} }
 // Screen-reader announcements via visually-hidden live regions.
@@ -2239,6 +2294,8 @@ function renderAcxPanel(){
     <h2 class="aboutH">Vision &amp; Reading</h2>
     ${acxSwitch('readAloud','Read aloud',!TTS_OK,TTS_OK?'Hear the page, tutor answers, quizzes and recommendations':'Not available in this browser')}
     ${acxSwitch('autoReadTutor','Automatically read tutor responses',!TTS_OK,'Off by default')}
+    <div class="acxRow"><span class="acxRowText"><span class="acxLabel">Reading voice</span><span class="acxNote">${TTS_OK?'Adult or kid, plus fun character styles':'Not available in this browser'}</span></span>
+      <select id="acxVoice" class="acxVoiceSel" aria-label="Reading voice"${TTS_OK?'':' disabled'}></select></div>
     <div class="acxRow"><span class="acxRowText"><span class="acxLabel">Text size</span></span>
       <span class="acxSeg acxTextSeg" role="group" aria-label="Text size">
         <button data-ts="default" class="${ts==='default'?'on':''}" aria-pressed="${ts==='default'}">Default</button>
@@ -2300,9 +2357,10 @@ function renderAcxPanel(){
   pad.querySelectorAll('.acxLevel button').forEach(b=>{ b.onclick=()=>{ S.level=b.dataset.lv; localStorage.setItem(LS+'_level',S.level); const ls=$('#levelSel'); if(ls)ls.value=S.level; renderAcxPanel(); announce('Explanation level '+S.level); }; });
   const kb=$('#acxKeysBtn'); if(kb)kb.onclick=()=>{ const el=$('#acxKeys'); const hid=el.hasAttribute('hidden'); if(hid){el.removeAttribute('hidden');kb.setAttribute('aria-expanded','true');}else{el.setAttribute('hidden','');kb.setAttribute('aria-expanded','false');} };
   const g=$('#acxGuideBtn'); if(g)g.onclick=()=>{ const el=$('#acxGuide'); const hidden=el.hasAttribute('hidden'); if(hidden){el.removeAttribute('hidden');g.setAttribute('aria-expanded','true');}else{el.setAttribute('hidden','');g.setAttribute('aria-expanded','false');} };
+  const av=$('#acxVoice'); if(av && TTS_OK){ av.innerHTML=voiceOptionsHTML(); av.value=S.acx.voice||'default'; av.onchange=e=>raSetVoice(e.target.value); }
   const r=$('#acxReset'); if(r)r.onclick=acxReset;
 }
-function acxReset(){ S.acx={readAloud:false,autoReadTutor:false,speechRate:1,highContrast:false,textSize:'default',spacing:'default',easyFont:false,readingRuler:false,easyInteraction:false,voiceCommands:false,reduceMotion:false}; localStorage.setItem(LS+'_read',''); acxSave(); applyAcx(); renderAcxPanel(); toast('Accessibility settings reset'); announce('Accessibility settings reset'); }
+function acxReset(){ S.acx={readAloud:false,autoReadTutor:false,speechRate:1,voice:'default',highContrast:false,textSize:'default',spacing:'default',easyFont:false,readingRuler:false,easyInteraction:false,voiceCommands:false,reduceMotion:false}; localStorage.setItem(LS+'_read',''); acxSave(); applyAcx(); syncVoiceControls(); renderAcxPanel(); toast('Accessibility settings reset'); announce('Accessibility settings reset'); }
 function openAcx(){ renderAcxPanel(); const o=$('#acxOverlay'); o.classList.add('open'); o.setAttribute('aria-hidden','false'); const c=$('#acxClose'); if(c)setTimeout(()=>c.focus(),30); }
 function closeAcx(){ const o=$('#acxOverlay'); o.classList.remove('open'); o.setAttribute('aria-hidden','true'); const b=$('#acxBtn'); if(b)b.focus(); }
 
@@ -2322,7 +2380,7 @@ function raSpeakChunk(){
   const c=raState.chunks[raState.idx]; if(!c){ raStop(); return; }
   if(c.el){ c.el.classList.add('ra-current'); try{c.el.scrollIntoView({block:'center',behavior:S.acx.reduceMotion?'auto':'smooth'});}catch(e){} }
   try{TTS.cancel();}catch(e){}
-  const u=new SpeechSynthesisUtterance(c.text); u.rate=S.acx.speechRate||1;
+  const u=raApplyVoice(new SpeechSynthesisUtterance(c.text));
   u.onend=()=>{ if(!raState.playing)return; if(raState.idx<raState.chunks.length-1){ raState.idx++; raSpeakChunk(); } else { raState.playing=false; raStopHighlight(); raUpdateBar(); } };
   TTS.speak(u); raState.playing=true; raUpdateBar();
 }
@@ -2331,7 +2389,7 @@ function raToggle(){ if(!TTS_OK){announce('Read aloud is not available in this b
 function raNext(){ if(!raState.chunks.length){raPlayPage();return;} if(raState.idx<raState.chunks.length-1){raState.idx++; raState.playing=true; raSpeakChunk();} }
 function raPrev(){ if(!raState.chunks.length){raPlayPage();return;} if(raState.idx>0){raState.idx--; raState.playing=true; raSpeakChunk();} }
 function raSetSpeed(v){ S.acx.speechRate=parseFloat(v)||1; acxSave(); if(raState.playing) raSpeakChunk(); }
-function raSpeakOnce(text){ if(!TTS_OK||!text)return; try{TTS.cancel();}catch(e){} const u=new SpeechSynthesisUtterance(String(text)); u.rate=S.acx.speechRate||1; TTS.speak(u); }
+function raSpeakOnce(text){ if(!TTS_OK||!text)return; try{TTS.cancel();}catch(e){} const u=raApplyVoice(new SpeechSynthesisUtterance(String(text))); TTS.speak(u); }
 function raUpdateBar(){ const pp=$('#raPlay'); if(pp){ const playing=TTS&&TTS.speaking&&!TTS.paused; pp.textContent=playing?'⏸':'▶'; pp.setAttribute('aria-label',playing?'Pause reading':'Play reading'); } }
 
 /* ---------- Voice input (dictation) for the tutor ---------- */
@@ -2475,6 +2533,9 @@ $('#fsMinus').onclick=()=>{readFS=Math.max(14,readFS-1);document.documentElement
   acxLoad(); S.acx.voiceCommands=false; applyAcx();
   if(!SR_OK){ const _m=$('#micBtn'); if(_m)_m.style.display='none'; }
   const _rs=$('#raSpeed'); if(_rs)_rs.value=String(S.acx.speechRate||1);
+  loadVoices(); if(TTS && 'onvoiceschanged' in TTS){ TTS.onvoiceschanged=()=>{ loadVoices(); syncVoiceControls(); }; }
+  syncVoiceControls();
+  const _rv=$('#raVoice'); if(_rv)_rv.onchange=e=>raSetVoice(e.target.value);
   setMapView(S.mapView||'graph');
 })();
 </script>
