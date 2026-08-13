@@ -8,6 +8,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Space+Grotesk:wght@400;500;600;700&family=Baloo+2:wght@600;700;800&family=Lexend:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
 :root{
   --paper:#F6F2E9; --page:#FDFBF5; --ink:#22303F; --ink-soft:#556170; --line:#DED7C6;
@@ -573,6 +576,72 @@ body.acx-motion #textPage p,body.acx-motion #textPage h2{transition:none}
 body.acx-easy #nbToolbar button,body.acx-easy #nbSketchTools button{height:38px}
 @media(max-width:560px){ #nbHead{gap:6px} .nbActions .btn{flex:1} }
 
+
+/* ---------- Live Study Room ---------- */
+#srBtn.on{background:var(--hl);color:#22303F}
+#pv-studyroom{flex-direction:column;height:100%;padding:0}
+#pv-studyroom.active{display:flex}
+#srContent{flex:1;overflow:auto;padding:18px 18px 22px}
+.srHero{text-align:center;padding:26px 8px 8px}
+.srHero .srIco{font-size:34px}
+.srHero h3{margin:8px 0 4px;font-size:18px;color:var(--ink)}
+.srHero p{color:var(--ink-soft);font-size:13px;max-width:320px;margin:0 auto 16px;line-height:1.5}
+.srBtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.srCard{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--paper);max-width:360px;margin:0 auto}
+.srField{display:block;margin:12px 0 4px;font-size:12px;font-weight:700;color:var(--ink)}
+.srInput{width:100%;font-size:15px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--page);color:var(--ink)}
+.srCode{font-size:26px;font-weight:800;letter-spacing:4px;color:var(--blue);text-align:center;background:var(--blue-soft);border-radius:10px;padding:10px;margin:6px 0}
+.srRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.srRow .btn{flex:1;font-size:12.5px;padding:9px 10px}
+.srNote{font-size:12px;color:var(--ink-soft);line-height:1.5;margin-top:8px}
+.srErr{color:var(--rust);font-size:12.5px;margin-top:8px;min-height:1em}
+/* active room bar */
+#srBar{display:none;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--line);background:var(--blue-soft);flex-wrap:wrap}
+#srBar.on{display:flex}
+#srBar .srAvs{display:inline-flex;align-items:center}
+.srChip{width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--paper);margin-left:-6px;position:relative}
+.srChip:first-child{margin-left:0}
+.srChip.off{background:var(--ink-soft);opacity:.6}
+.srChip .srDot{position:absolute;right:-1px;bottom:-1px;width:8px;height:8px;border-radius:50%;background:var(--green);border:1.5px solid var(--paper)}
+.srCount{font-size:11.5px;font-weight:700;color:var(--blue);margin-left:4px}
+#srBar .srBtnMini{font-size:11.5px;font-weight:700;padding:5px 9px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);display:inline-flex;align-items:center;gap:4px}
+#srBar .srBtnMini.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+#srBar .srBtnMini .srBadge{background:var(--rust);color:#fff;border-radius:99px;font-size:9px;padding:0 5px;font-weight:800}
+#srBar .srSpacer{flex:1}
+.srMore{position:relative}
+.srMoreMenu{position:absolute;top:112%;right:0;z-index:70;background:var(--paper);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.16);padding:6px;display:none;flex-direction:column;gap:2px;min-width:190px}
+.srMoreMenu.open{display:flex}
+.srMoreMenu button{text-align:left;font-size:13px;padding:8px 10px;border-radius:7px;color:var(--ink)}
+.srMoreMenu button:hover{background:var(--page)}
+.srMoreMenu button.danger{color:var(--rust)}
+.srMoreMenu .srMHead{font-size:11px;color:var(--ink-soft);padding:4px 10px 2px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.srMoreMenu .srPart{display:flex;align-items:center;gap:8px;padding:6px 10px}
+.srMoreMenu .srPart .srChip{margin:0}
+.srMoreMenu .srPart select{margin-left:auto;font-size:11px;padding:2px 4px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)}
+/* chat drawer */
+#srChat{position:fixed;right:16px;bottom:16px;width:330px;max-width:calc(100vw - 32px);height:420px;max-height:70vh;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 40px rgba(0,0,0,.22);display:none;flex-direction:column;z-index:120}
+#srChat.open{display:flex}
+#srChatHead{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+#srChatHead h4{margin:0;font-size:13px;font-weight:800;color:var(--ink)}
+#srChatHead .srChatClose{margin-left:auto;font-size:15px;color:var(--ink-soft)}
+#srChatLog{flex:1;overflow:auto;padding:10px 12px;display:flex;flex-direction:column;gap:9px}
+.srMsg{font-size:13px;line-height:1.4}
+.srMsg .srMeta{font-size:10.5px;color:var(--ink-soft);font-weight:700;margin-bottom:1px}
+.srMsg .srMeta .srWho{color:var(--blue)}
+.srMsg .srText{color:var(--ink);word-break:break-word}
+.srMsg .srRef{display:inline-flex;align-items:center;gap:5px;margin-top:3px;font-size:12px;font-weight:600;color:var(--blue);background:var(--blue-soft);border-radius:8px;padding:5px 9px;cursor:pointer;border:1px solid var(--line)}
+.srMine{align-items:flex-end;text-align:right}
+.srMine .srText{background:var(--blue);color:#fff;border-radius:10px 10px 3px 10px;padding:6px 9px;display:inline-block}
+#srChatBox{padding:8px;border-top:1px solid var(--line)}
+#srChatShare{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+#srChatShare button{font-size:11px;padding:4px 8px;border:1px solid var(--line);border-radius:99px;background:var(--page);color:var(--ink-soft)}
+#srChatInputRow{display:flex;gap:6px}
+#srChatInput{flex:1;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--page);color:var(--ink);resize:none}
+#srActiveTag{display:none;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--green)}
+#srActiveTag.on{display:inline-flex}
+body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{border-color:#000 !important}
+@media(max-width:560px){ #srChat{right:8px;left:8px;width:auto} #srBar{gap:6px;padding:6px 9px} }
+
 </style>
 </head>
 <body data-theme="light">
@@ -650,6 +719,7 @@ body.acx-easy #nbToolbar button,body.acx-easy #nbSketchTools button{height:38px}
         <button class="iconbtn" id="hlModeBtn" title="Highlighter: click a paragraph to highlight" aria-label="Highlighter" aria-pressed="false" data-label="Highlight">🖍️</button>
         <button class="iconbtn" id="readFontBtn" title="Easy-reading font (dyslexia-friendly)" aria-label="Toggle easy-reading font" aria-pressed="false" data-label="Easy font">🔡</button>
         <button class="iconbtn" id="nbBtn" title="Study Notebook" aria-label="Study Notebook" aria-pressed="false" data-label="Notebook">📝</button>
+        <button class="iconbtn" id="srBtn" title="Study Room" aria-label="Study Room" aria-pressed="false" data-label="Study Room">👥</button>
         <span id="pgInfo"></span>
         <div class="grow"></div>
         <button class="btn ghost" id="quizPageBtn" style="padding:6px 12px;font-size:12px">Quiz me on this</button>
@@ -680,6 +750,18 @@ body.acx-easy #nbToolbar button,body.acx-easy #nbSketchTools button{height:38px}
   <!-- Right panel -->
   <div id="panel" role="complementary" aria-label="Learning tools">
     <h1 class="sr-only">DigiBook AI learning workspace</h1>
+    <div id="srBar" role="region" aria-label="Study Room">
+      <span class="srAvs" id="srAvs" aria-hidden="true"></span>
+      <span class="srCount" id="srCount"></span>
+      <span class="srSpacer"></span>
+      <button class="srBtnMini" id="srTalkBtn" aria-label="Talk (audio)" title="Talk">🎙 Talk</button>
+      <button class="srBtnMini" id="srChatBtn" aria-label="Open chat" title="Chat">💬 Chat</button>
+      <button class="srBtnMini" id="srFollowBtn" aria-pressed="false" aria-label="Follow presenter">Follow</button>
+      <span class="srMore">
+        <button class="srBtnMini" id="srMoreBtn" aria-haspopup="true" aria-expanded="false" aria-label="Study Room options">⋯</button>
+        <div class="srMoreMenu" id="srMoreMenu" role="menu"></div>
+      </span>
+    </div>
     <div id="panelTop">
       <div id="panelTabs" role="tablist" aria-label="Panel views">
         <button data-tab="learn" class="active" role="tab" aria-selected="true"><span class="tIco" aria-hidden="true">📖</span>Learn</button>
@@ -771,6 +853,7 @@ body.acx-easy #nbToolbar button,body.acx-easy #nbSketchTools button{height:38px}
       </div>
       <div id="nbContent"></div>
     </div>
+    <div class="panelView" id="pv-studyroom" role="region" aria-label="Study Room"><div id="srContent"></div></div>
   </div>
 </div>
 
@@ -797,6 +880,21 @@ body.acx-easy #nbToolbar button,body.acx-easy #nbSketchTools button{height:38px}
 </div>
 
 <div id="selPop"></div>
+<div id="srChat" role="dialog" aria-label="Study Room chat" aria-hidden="true">
+  <div id="srChatHead"><span aria-hidden="true">💬</span><h4>Study Room Chat</h4><button class="srChatClose" id="srChatClose" aria-label="Close chat">✕</button></div>
+  <div id="srChatLog" role="log" aria-live="polite" aria-label="Chat messages"></div>
+  <div id="srChatBox">
+    <div id="srChatShare">
+      <button id="srSharePage" type="button">Share current page</button>
+      <button id="srShareNote" type="button">Share a note</button>
+      <button id="srShareSketch" type="button">Share sketch</button>
+    </div>
+    <div id="srChatInputRow">
+      <textarea id="srChatInput" rows="1" placeholder="Message your study room…" aria-label="Chat message"></textarea>
+      <button class="btn" id="srChatSend">Send</button>
+    </div>
+  </div>
+</div>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -1318,6 +1416,7 @@ function afterPage(){
   S.stats.pagesRead++; save();
   updateStats();
   if(typeof nbOnPageChange==='function')nbOnPageChange();
+  if(typeof srBroadcastReader==='function')srBroadcastReader();
   announce((S.book?S.book.title+'. ':'')+'Page '+(S.page+1)+' of '+n+'.');
 }
 function gotoPage(p){
@@ -1891,7 +1990,7 @@ function updateStats(){
 function switchTab(name){
   $$('#panelTabs button').forEach(b=>{const on=b.dataset.tab===name;b.classList.toggle('active',on);b.setAttribute('role','tab');b.setAttribute('aria-selected',on?'true':'false');});
   $$('.panelView').forEach(v=>v.classList.toggle('active',v.id==='pv-'+name));
-  { const _nb=document.querySelector('#nbBtn'); if(_nb){_nb.classList.remove('on');_nb.setAttribute('aria-pressed','false');} if(typeof nbUI!=='undefined')nbUI.open=false; }
+  { const _nb=document.querySelector('#nbBtn'); if(_nb){_nb.classList.remove('on');_nb.setAttribute('aria-pressed','false');} if(typeof nbUI!=='undefined')nbUI.open=false; const _sr=document.querySelector('#srBtn'); if(_sr){_sr.classList.remove('on');_sr.setAttribute('aria-pressed','false');} }
   if(name==='progress')progressSub(S.progressSub||'mastery');
   if(name==='about')renderAbout();
   if(name==='quiz' && !S.quiz)renderQuizIdle();
@@ -2623,6 +2722,7 @@ function openNotebook(mode,scope){
   $$('#panelTabs button').forEach(b=>{ b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
   $$('.panelView').forEach(v=>v.classList.toggle('active',v.id==='pv-notebook'));
   const nb=$('#nbBtn'); if(nb){ nb.classList.add('on'); nb.setAttribute('aria-pressed','true'); }
+  const _srb=$('#srBtn'); if(_srb){ _srb.classList.remove('on'); _srb.setAttribute('aria-pressed','false'); }
   nbSyncHead(); nbRender();
   if(window.innerWidth<=860 && S.book) toggleFocus(true);
   announce('Study Notebook.');
@@ -2919,6 +3019,324 @@ function nbInit(){
   let rt; window.addEventListener('resize',()=>{ if(nbUI.open&&nbUI.mode==='sketch'&&nbSk._fit){ clearTimeout(rt); rt=setTimeout(()=>{ if(nbSk._fit)nbSk._fit(); },160); } });
 }
 
+/* ============ Live Study Room (Phase 1: presence, follow, chat) ============
+   Realtime transport: Firebase Realtime Database (compat SDK, loaded in <head>).
+   The web config below is safe to expose; security is enforced by database Rules.
+   Personal data (notebook, adaptive path, quiz, accessibility) is NEVER shared;
+   only the active room's participants / reader page / chat are collaborative. */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCUua_Nj-KMOWV5jwLZEDq-Fy5IkV9JSu0",
+  authDomain: "digibook-study-room.firebaseapp.com",
+  databaseURL: "https://digibook-study-room-default-rtdb.firebaseio.com",
+  projectId: "digibook-study-room",
+  storageBucket: "digibook-study-room.firebasestorage.app",
+  messagingSenderId: "940257404863",
+  appId: "1:940257404863:web:6e488d86bdf5670c96e30a"
+};
+const SR_ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no O/0/I/1
+let FB_APP=null, FB_DB=null, FB_AUTH=null;
+let srState={ active:false, roomId:null, roomCode:null, isHost:false, presenterId:null,
+  following:null, me:null, participants:{}, presenterPage:null, unread:0, chatOpen:false,
+  refs:{}, chatSeen:{}, _hb:null };
+let srSuppressBroadcast=false;
+
+function srConfigured(){ return typeof firebase!=='undefined' && FIREBASE_CONFIG && FIREBASE_CONFIG.databaseURL; }
+function fbEnsure(){
+  if(FB_DB) return true;
+  if(!srConfigured()) return false;
+  try{
+    FB_APP = (firebase.apps && firebase.apps.length) ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+    FB_DB = firebase.database(); FB_AUTH = firebase.auth(); return true;
+  }catch(e){ console.log('[studyroom] init failed: '+e.message); return false; }
+}
+async function fbAuth(){
+  if(!fbEnsure()) return null;
+  try{ const c=await FB_AUTH.signInAnonymously(); return c.user.uid; }
+  catch(e){ console.log('[studyroom] anon auth off, using local id'); return 'sr'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+}
+const SV=()=> (typeof firebase!=='undefined' ? firebase.database.ServerValue.TIMESTAMP : Date.now());
+function srGenCode(){ let c=''; for(let i=0;i<6;i++) c+=SR_ALPHABET[Math.floor(Math.random()*SR_ALPHABET.length)]; return c; }
+function srInitials(name){ const p=(name||'').trim().split(/\s+/).filter(Boolean); if(!p.length)return '??'; if(p.length===1)return p[0].slice(0,2).toUpperCase(); return (p[0][0]+p[p.length-1][0]).toUpperCase(); }
+function srInviteLink(code){ return location.origin+location.pathname+'?studyroom='+code; }
+
+/* ---------- Open / toggle panel ---------- */
+function srToggle(){ if(srUIOpen()) switchTab('learn'); else openStudyRoom(); }
+function srUIOpen(){ const p=$('#pv-studyroom'); return p&&p.classList.contains('active'); }
+function openStudyRoom(prefillCode){
+  $$('#panelTabs button').forEach(b=>{ b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+  $$('.panelView').forEach(v=>v.classList.toggle('active',v.id==='pv-studyroom'));
+  const b=$('#srBtn'); if(b){ b.classList.add('on'); b.setAttribute('aria-pressed','true'); }
+  const _nb=$('#nbBtn'); if(_nb){ _nb.classList.remove('on'); _nb.setAttribute('aria-pressed','false'); }
+  srRender(prefillCode);
+  if(window.innerWidth<=860) toggleFocus(true);
+  announce('Study Room.');
+}
+function srClearBtn(){ const b=$('#srBtn'); if(b){ b.classList.remove('on'); b.setAttribute('aria-pressed','false'); } }
+
+/* ---------- Panel screens ---------- */
+function srRender(prefillCode){
+  const c=$('#srContent'); if(!c) return;
+  if(srState.active){ srRenderActivePanel(); return; }
+  if(!srConfigured()){
+    c.innerHTML='<div class="srHero"><div class="srIco" aria-hidden="true">👥</div><h3>Study Room</h3>'
+      +'<p>Live Study Room turns on once DigiBook is connected to its realtime service. If you are the owner, add your Firebase config to enable it.</p>'
+      +'<p class="srNote">Everything else in DigiBook keeps working normally.</p></div>';
+    return;
+  }
+  const showJoin = !!prefillCode;
+  c.innerHTML='<div class="srHero"><div class="srIco" aria-hidden="true">👥</div><h3>Study Room</h3>'
+    +'<p>Study together in the same reader, notebook and sketch space.</p>'
+    +'<div class="srBtns"><button class="btn" id="srCreateBtn">Create Room</button><button class="btn ghost" id="srJoinToggle">Join Room</button></div></div>'
+    +'<div class="srCard" id="srCreateCard" style="display:none;margin-top:16px">'
+      +'<label class="srField" for="srNameC">Your name or nickname</label>'
+      +'<input class="srInput" id="srNameC" maxlength="24" placeholder="e.g. Deepak" autocomplete="off">'
+      +'<div class="srErr" id="srCreateErr"></div>'
+      +'<div class="srRow"><button class="btn" id="srDoCreate">Create the room</button></div></div>'
+    +'<div class="srCard" id="srJoinCard" style="display:'+(showJoin?'block':'none')+';margin-top:16px">'
+      +'<label class="srField" for="srCodeJ">Room code</label>'
+      +'<input class="srInput" id="srCodeJ" maxlength="6" placeholder="A7K4P2" autocomplete="off" style="text-transform:uppercase" value="'+(prefillCode?esc(prefillCode):'')+'">'
+      +'<label class="srField" for="srNameJ">Your name or nickname</label>'
+      +'<input class="srInput" id="srNameJ" maxlength="24" placeholder="e.g. Ansh" autocomplete="off">'
+      +'<div class="srErr" id="srJoinErr"></div>'
+      +'<div class="srRow"><button class="btn" id="srDoJoin">Join room</button></div></div>';
+  const cb=$('#srCreateBtn'); if(cb)cb.onclick=()=>{ $('#srCreateCard').style.display='block'; $('#srJoinCard').style.display='none'; const n=$('#srNameC'); if(n)n.focus(); };
+  const jt=$('#srJoinToggle'); if(jt)jt.onclick=()=>{ $('#srJoinCard').style.display='block'; $('#srCreateCard').style.display='none'; const n=$('#srCodeJ'); if(n)n.focus(); };
+  const dc=$('#srDoCreate'); if(dc)dc.onclick=()=>{ const n=($('#srNameC').value||'').trim(); if(!n){ $('#srCreateErr').textContent='Please enter a name.'; return; } dc.disabled=true; srCreateRoom(n).catch(e=>{ $('#srCreateErr').textContent='Could not create room. '+(e.message||''); dc.disabled=false; }); };
+  const dj=$('#srDoJoin'); if(dj)dj.onclick=()=>{ const code=($('#srCodeJ').value||'').trim().toUpperCase(); const n=($('#srNameJ').value||'').trim(); if(!n){ $('#srJoinErr').textContent='Please enter a name.'; return; } dj.disabled=true; srJoinRoom(code,n).catch(e=>{ $('#srJoinErr').textContent=(e&&e.message)||'Could not join.'; dj.disabled=false; }); };
+  if(prefillCode){ const n=$('#srNameJ'); if(n)n.focus(); }
+}
+function srRenderActivePanel(){
+  const c=$('#srContent'); const link=srInviteLink(srState.roomCode);
+  c.innerHTML='<div class="srCard" style="margin-top:6px">'
+    +'<div style="font-size:12px;font-weight:700;color:var(--green)">👥 Study Room Active</div>'
+    +'<label class="srField">Room code</label><div class="srCode">'+esc(srState.roomCode)+'</div>'
+    +'<div class="srRow"><button class="btn ghost" id="srCopyLink">Copy Invite Link</button><button class="btn ghost" id="srCopyCode">Copy Room Code</button></div>'
+    +'<p class="srNote">Share the code or link with a study buddy. Changes in shared Notes and Sketch are visible to everyone in the room. Your personal notebooks, progress and settings are not shared.</p>'
+    +'<div class="srRow"><button class="btn" id="srShareInReader" style="flex:1">Continue in the reader</button></div>'
+    +'</div>';
+  const cl=$('#srCopyLink'); if(cl)cl.onclick=()=>srCopy(link,'Invite link copied');
+  const cc=$('#srCopyCode'); if(cc)cc.onclick=()=>srCopy(srState.roomCode,'Room code copied');
+  const sr=$('#srShareInReader'); if(sr)sr.onclick=()=>switchTab('learn');
+}
+function srCopy(text,msg){ try{ navigator.clipboard.writeText(text); toast(msg); }catch(e){ toast('Copy not available; select and copy manually'); } }
+
+/* ---------- Create / Join ---------- */
+async function srCreateRoom(name){
+  if(!fbEnsure()){ srRender(); return; }
+  const uid=await fbAuth(); if(!uid) throw new Error('No connection');
+  const code=srGenCode();
+  srState.me={participantId:uid, displayName:name, initials:srInitials(name), permission:'edit', isHost:true};
+  srState.roomId=code; srState.roomCode=code; srState.isHost=true; srState.presenterId=uid; srState.following=null; srState.active=true; srState.chatSeen={};
+  const base=FB_DB.ref('rooms/'+code);
+  await base.child('meta').set({ roomCode:code, hostId:uid, presenterId:uid, createdAt:SV(), docTitle:(S.book?S.book.title:''), docType:(S.book?S.book.type:''), shareMode:'workspace' });
+  await srWriteMe();
+  if(S.book) base.child('reader').set({page:S.page, updatedBy:uid, updatedAt:SV()});
+  srAttach(); srAfterJoin(); toast('Study Room created: '+code);
+}
+async function srJoinRoom(code,name){
+  code=(code||'').trim().toUpperCase();
+  if(!/^[A-Z0-9]{6}$/.test(code)) throw new Error('Enter a 6-character room code.');
+  if(!fbEnsure()){ srRender(); return; }
+  const uid=await fbAuth(); if(!uid) throw new Error('No connection');
+  const snap=await FB_DB.ref('rooms/'+code+'/meta').get();
+  if(!snap.exists()) throw new Error('No Study Room found with that code.');
+  const meta=snap.val();
+  srState.me={participantId:uid, displayName:name, initials:srInitials(name), permission:'edit', isHost:false};
+  srState.roomId=code; srState.roomCode=code; srState.isHost=false; srState.presenterId=meta.presenterId; srState.following=meta.presenterId; srState.active=true; srState.chatSeen={};
+  await srWriteMe();
+  srAttach(); srAfterJoin(); toast('Joined Study Room '+code);
+}
+async function srWriteMe(){
+  const p=srState.me; const ref=FB_DB.ref('rooms/'+srState.roomId+'/participants/'+p.participantId);
+  await ref.set({ displayName:p.displayName, initials:p.initials, permission:p.permission, isHost:p.isHost, online:true, joinedAt:SV(), lastSeen:SV() });
+  ref.onDisconnect().update({ online:false, lastSeen:SV() });
+}
+function srAfterJoin(){ srState.chatSeen={}; srBarShow(true); srRenderBar(); srRenderActivePanel(); srClearBtn(); }
+
+/* ---------- Realtime listeners ---------- */
+function srAttach(){
+  const base=FB_DB.ref('rooms/'+srState.roomId);
+  srState.refs.participants=base.child('participants');
+  srState.refs.participants.on('value', s=>srOnParticipants(s.val()||{}));
+  srState.refs.meta=base.child('meta');
+  srState.refs.meta.on('value', s=>{ const m=s.val(); if(!m){ srRoomEnded(); return; } srState.presenterId=m.presenterId; srRenderBar(); });
+  srState.refs.reader=base.child('reader');
+  srState.refs.reader.on('value', s=>{ const r=s.val(); if(r) srOnReader(r); });
+  srState.refs.chat=base.child('chat');
+  srState.refs.chat.on('child_added', s=>srOnChat(s.key, s.val()));
+  srState._hb=setInterval(()=>{ try{ FB_DB.ref('rooms/'+srState.roomId+'/participants/'+srState.me.participantId+'/lastSeen').set(SV()); }catch(e){} }, 25000);
+}
+function srDetach(){ Object.values(srState.refs||{}).forEach(r=>{ try{ r.off(); }catch(e){} }); srState.refs={}; if(srState._hb){ clearInterval(srState._hb); srState._hb=null; } }
+
+function srOnParticipants(v){
+  const prev=srState.participants||{};
+  Object.keys(v).forEach(id=>{ if(id===srState.me.participantId)return;
+    const was=prev[id]&&prev[id].online, now=v[id].online;
+    if(!was && now) announce((v[id].displayName||'Someone')+' joined the Study Room');
+    if(was && !now) announce((v[id].displayName||'Someone')+' left the Study Room');
+  });
+  srState.participants=v; srRenderBar();
+}
+function srOnReader(r){
+  srState.presenterPage=r.page;
+  if(srState.active && srState.following && srState.following===srState.presenterId && srState.presenterId!==srState.me.participantId){
+    if(typeof r.page==='number' && S.book && r.page!==S.page){ srSuppressBroadcast=true; gotoPage(r.page); announce('Presenter moved to page '+(r.page+1)); }
+  }
+  srRenderBar();
+}
+function srBroadcastReader(){
+  if(!srState.active || !FB_DB) return;
+  if(srState.presenterId!==srState.me.participantId){ srSuppressBroadcast=false; return; }
+  if(srSuppressBroadcast){ srSuppressBroadcast=false; return; }
+  try{ FB_DB.ref('rooms/'+srState.roomId+'/reader').update({page:S.page, updatedBy:srState.me.participantId, updatedAt:SV()}); }catch(e){}
+}
+
+/* ---------- Follow ---------- */
+function srToggleFollow(){
+  if(!srState.active)return;
+  if(srState.following){ srState.following=null; announce('Stopped following the presenter'); }
+  else { srState.following=srState.presenterId; announce('Following the presenter'); srReturnToPresenter(); }
+  srRenderBar();
+}
+function srReturnToPresenter(){
+  if(!FB_DB)return;
+  FB_DB.ref('rooms/'+srState.roomId+'/reader').get().then(s=>{ const r=s.val(); if(r&&typeof r.page==='number'&&S.book){ srSuppressBroadcast=true; gotoPage(r.page); } }).catch(()=>{});
+}
+
+/* ---------- Active bar ---------- */
+function srBarShow(on){ const bar=$('#srBar'); if(bar) bar.classList.toggle('on', !!on); }
+function srPresenterName(){ const p=srState.participants[srState.presenterId]; return p?p.displayName:(srState.presenterId===srState.me.participantId?'you':'presenter'); }
+function srRenderBar(){
+  const bar=$('#srBar'); if(!bar) return;
+  bar.classList.toggle('on', !!srState.active);
+  if(!srState.active) return;
+  const parts=Object.entries(srState.participants||{}).filter(([id,p])=>p&&(p.online||id===srState.me.participantId));
+  const avs=$('#srAvs'); if(avs) avs.innerHTML=parts.map(([id,p])=>'<span class="srChip'+(p.online?'':' off')+'" title="'+esc(p.displayName||'')+(id===srState.presenterId?' (presenter)':'')+'">'+esc(p.initials||'?')+(p.online?'<span class="srDot"></span>':'')+'</span>').join('');
+  const cnt=$('#srCount'); if(cnt) cnt.textContent=parts.filter(([id,p])=>p.online).length+' online';
+  const fb=$('#srFollowBtn');
+  if(fb){ const isPresenter=srState.presenterId===srState.me.participantId;
+    if(isPresenter){ fb.textContent='Presenting'; fb.classList.add('on'); fb.setAttribute('aria-pressed','true'); fb.disabled=true; }
+    else { fb.disabled=false; const on=!!srState.following;
+      const behind = on && srState.presenterPage!=null && S.book && srState.presenterPage!==S.page;
+      fb.textContent = on ? (behind?'Return to '+srPresenterName():'Following '+srPresenterName()) : 'Follow '+srPresenterName();
+      fb.classList.toggle('on',on); fb.setAttribute('aria-pressed',on?'true':'false'); }
+  }
+  const cbtn=$('#srChatBtn'); if(cbtn) cbtn.innerHTML='💬 Chat'+(srState.unread?' <span class="srBadge">'+srState.unread+'</span>':'');
+}
+function srRenderMoreMenu(){
+  const m=$('#srMoreMenu'); if(!m) return;
+  const link=srInviteLink(srState.roomCode);
+  let html='<button role="menuitem" data-a="copylink">Copy Invite Link</button>'
+    +'<button role="menuitem" data-a="copycode">Copy Room Code</button>'
+    +'<div class="srMHead">Participants</div>';
+  Object.entries(srState.participants||{}).forEach(([id,p])=>{
+    if(!p)return;
+    html+='<div class="srPart"><span class="srChip'+(p.online?'':' off')+'">'+esc(p.initials||'?')+'</span><span style="font-size:12.5px">'+esc(p.displayName||'')+(id===srState.presenterId?' · presenter':'')+(id===srState.me.participantId?' · you':'')+'</span>';
+    if(srState.isHost && id!==srState.me.participantId){
+      html+='<select data-perm="'+id+'" aria-label="Permission for '+esc(p.displayName||'')+'"><option value="edit"'+(p.permission!=='view'?' selected':'')+'>Can edit</option><option value="view"'+(p.permission==='view'?' selected':'')+'>View only</option></select>';
+    }
+    html+='</div>';
+  });
+  if(srState.isHost){ html+='<div class="srMHead">Host</div>'; }
+  html+='<button role="menuitem" class="danger" data-a="leave">Leave Room</button>';
+  if(srState.isHost) html+='<button role="menuitem" class="danger" data-a="end">End Study Room</button>';
+  m.innerHTML=html;
+  m.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{ m.classList.remove('open'); $('#srMoreBtn').setAttribute('aria-expanded','false'); const a=b.dataset.a;
+    if(a==='copylink')srCopy(link,'Invite link copied');
+    else if(a==='copycode')srCopy(srState.roomCode,'Room code copied');
+    else if(a==='leave')srLeaveRoom();
+    else if(a==='end')srEndRoom();
+  });
+  m.querySelectorAll('[data-perm]').forEach(sel=>sel.onchange=()=>{ const id=sel.dataset.perm; try{ FB_DB.ref('rooms/'+srState.roomId+'/participants/'+id+'/permission').set(sel.value); toast('Permission updated'); }catch(e){} });
+}
+
+/* ---------- Chat ---------- */
+function srOpenChat(){ const d=$('#srChat'); if(!d)return; d.classList.add('open'); d.setAttribute('aria-hidden','false'); srState.chatOpen=true; srState.unread=0; srRenderBar(); const i=$('#srChatInput'); if(i)setTimeout(()=>i.focus(),30); const log=$('#srChatLog'); if(log)log.scrollTop=log.scrollHeight; }
+function srCloseChat(){ const d=$('#srChat'); if(!d)return; d.classList.remove('open'); d.setAttribute('aria-hidden','true'); srState.chatOpen=false; }
+function srSendChat(text,ref){
+  if(!srState.active) return;
+  text=(text||'').trim(); if(!text && !ref) return;
+  const msg={ participantId:srState.me.participantId, initials:srState.me.initials, name:srState.me.displayName, text:text, ts:SV() };
+  if(ref) msg.ref=ref;
+  try{ FB_DB.ref('rooms/'+srState.roomId+'/chat').push(msg); }catch(e){}
+}
+function srOnChat(key,msg){
+  if(srState.chatSeen[key]) return; srState.chatSeen[key]=1;
+  srRenderChatMsg(key,msg);
+  if(msg.participantId!==srState.me.participantId){
+    if(!srState.chatOpen){ srState.unread++; srRenderBar(); }
+    announce('New chat message from '+(msg.name||msg.initials||'someone'));
+  }
+}
+function srRenderChatMsg(key,msg){
+  const log=$('#srChatLog'); if(!log)return;
+  const mine=msg.participantId===srState.me.participantId;
+  const when=msg.ts?srFmtTime(msg.ts):'';
+  let refHtml='';
+  if(msg.ref){ const r=msg.ref; let label='Shared';
+    if(r.type==='page') label='📄 Page '+((r.page|0)+1)+(r.title?' · '+esc(r.title):'');
+    else if(r.type==='note') label='📝 Notebook note';
+    else if(r.type==='sketch') label='✏️ Sketch';
+    else if(r.type==='passage') label='“'+esc((r.text||'').slice(0,60))+'”';
+    refHtml='<span class="srRef" data-ref=\''+esc(JSON.stringify(r))+'\'>'+label+'</span>';
+  }
+  const div=document.createElement('div'); div.className='srMsg'+(mine?' srMine':'');
+  div.innerHTML='<div class="srMeta"><span class="srWho">'+esc(mine?'You':(msg.name||msg.initials||'?'))+'</span> · '+when+'</div>'
+    +(msg.text?'<div class="srText">'+esc(msg.text)+'</div>':'')+refHtml;
+  const rf=div.querySelector('.srRef'); if(rf) rf.onclick=()=>{ try{ srOpenRef(JSON.parse(rf.getAttribute('data-ref'))); }catch(e){} };
+  log.appendChild(div); log.scrollTop=log.scrollHeight;
+}
+function srOpenRef(r){
+  if(!r)return;
+  if(r.type==='page' && typeof r.page==='number' && S.book){ if(document.body.classList.contains('focus-mode'))toggleFocus(false); gotoPage(r.page); toast('Jumped to page '+(r.page+1)); }
+  else if(r.type==='note'){ if(typeof openNotebook==='function') openNotebook('notes','all'); }
+  else if(r.type==='sketch'){ if(typeof openNotebook==='function') openNotebook('sketch','page'); }
+  else if(r.type==='passage' && typeof r.page==='number' && S.book){ if(document.body.classList.contains('focus-mode'))toggleFocus(false); gotoPage(r.page); }
+}
+function srFmtTime(ts){ try{ const d=new Date(ts); let h=d.getHours(), m=d.getMinutes(); const ap=h>=12?'PM':'AM'; h=h%12||12; return h+':'+(m<10?'0':'')+m+' '+ap; }catch(e){ return ''; } }
+function srSharePage(){ if(!srState.active||!S.book){ toast('Open a lesson first'); return;} srSendChat('', {type:'page', page:S.page, title:S.book.title}); toast('Shared this page in chat'); }
+function srShareNote(){ if(!srState.active){return;} srSendChat('', {type:'note'}); }
+function srShareSketch(){ if(!srState.active){return;} srSendChat('', {type:'sketch'}); }
+
+/* ---------- Leave / End ---------- */
+function srLeaveRoom(){
+  if(!srState.active)return;
+  try{ FB_DB.ref('rooms/'+srState.roomId+'/participants/'+srState.me.participantId).update({online:false, lastSeen:SV()}); }catch(e){}
+  srDetach(); srReset(); toast('You left the Study Room'); announce('You left the Study Room');
+}
+function srEndRoom(){
+  if(!srState.isHost)return;
+  if(!confirm('End this Study Room for everyone?'))return;
+  try{ FB_DB.ref('rooms/'+srState.roomId).remove(); }catch(e){}
+  srDetach(); srReset(); toast('Study Room ended'); announce('Study Room ended');
+}
+function srRoomEnded(){ if(!srState.active)return; srDetach(); srReset(); toast('The Study Room was ended by the host'); announce('The Study Room has ended'); }
+function srReset(){
+  srState.active=false; srState.roomId=null; srState.roomCode=null; srState.isHost=false;
+  srState.presenterId=null; srState.following=null; srState.me=null; srState.participants={};
+  srState.unread=0; srState.presenterPage=null; srState.chatSeen={};
+  srBarShow(false); srCloseChat(); srRender(); srRenderBar();
+}
+
+/* ---------- Init ---------- */
+function srInit(){
+  const b=$('#srBtn'); if(b)b.onclick=srToggle;
+  if(!srConfigured()){ if(b)b.style.display='none'; return; }
+  const fbtn=$('#srFollowBtn'); if(fbtn)fbtn.onclick=srToggleFollow;
+  const cbtn=$('#srChatBtn'); if(cbtn)cbtn.onclick=()=>{ if(srState.chatOpen)srCloseChat(); else srOpenChat(); };
+  const cc=$('#srChatClose'); if(cc)cc.onclick=srCloseChat;
+  const cs=$('#srChatSend'); if(cs)cs.onclick=()=>{ const i=$('#srChatInput'); if(i){ srSendChat(i.value); i.value=''; i.focus(); } };
+  const ci=$('#srChatInput'); if(ci)ci.onkeydown=(e)=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); srSendChat(ci.value); ci.value=''; } };
+  const sp=$('#srSharePage'); if(sp)sp.onclick=srSharePage;
+  const sn=$('#srShareNote'); if(sn)sn.onclick=srShareNote;
+  const sk=$('#srShareSketch'); if(sk)sk.onclick=srShareSketch;
+  const tb=$('#srTalkBtn'); if(tb)tb.onclick=()=>toast('Live audio (Talk) arrives in the next update.');
+  const mb=$('#srMoreBtn'); if(mb)mb.onclick=(e)=>{ e.stopPropagation(); const m=$('#srMoreMenu'); const open=!m.classList.contains('open'); if(open)srRenderMoreMenu(); m.classList.toggle('open',open); mb.setAttribute('aria-expanded',open?'true':'false'); };
+  document.addEventListener('click',(e)=>{ const m=$('#srMoreMenu'); if(m&&m.classList.contains('open')&&!(e.target.closest&&e.target.closest('.srMore'))){ m.classList.remove('open'); const mb2=$('#srMoreBtn'); if(mb2)mb2.setAttribute('aria-expanded','false'); } });
+  // auto-open from invite link
+  try{ const u=new URLSearchParams(location.search); const code=u.get('studyroom'); if(code){ openStudyRoom(code.toUpperCase().slice(0,6)); } }catch(e){}
+}
+
 /* ============ Wire up UI ============ */
 $('#pickBtn').onclick=()=>$('#fileInput').click();
 $('#fileInput').onchange=e=>{ if(e.target.files[0])openFile(e.target.files[0]); };
@@ -2988,6 +3406,7 @@ $('#fsMinus').onclick=()=>{readFS=Math.max(14,readFS-1);document.documentElement
   syncVoiceControls();
   voicePickInit();
   nbLoad(); nbInit();
+  srInit();
   setMapView(S.mapView||'graph');
 })();
 </script>
