@@ -383,9 +383,95 @@ body.focus-mode .pv-pad{max-width:940px;margin-left:auto;margin-right:auto}
 body.focus-mode #chatLog,body.focus-mode #chatBox{max-width:900px;margin-left:auto;margin-right:auto;width:100%}
 body.focus-mode #progressSub{max-width:940px;margin-left:auto;margin-right:auto}
 @media(max-width:860px){ body.focus-mode #panel{height:100%} }
+
+/* ============ Accessibility ============ */
+.skip-link{position:absolute;left:8px;top:-60px;z-index:200;background:var(--blue);color:#fff;padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600;transition:top .15s}
+[data-theme="dark"] .skip-link{color:#0F1319}
+.skip-link:focus{top:8px}
+/* Accessibility button */
+#acxBtn{font-size:16px}
+/* Modal */
+#acxOverlay{position:fixed;inset:0;z-index:130;background:rgba(20,26,34,.55);backdrop-filter:blur(3px);display:none;align-items:flex-start;justify-content:center;padding:34px 16px;overflow-y:auto}
+#acxOverlay.open{display:flex}
+#acxCard{position:relative;width:100%;max-width:520px;background:var(--page);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:24px 24px 22px;margin:auto}
+#acxClose{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:8px;font-size:15px;color:var(--ink-soft);border:1px solid var(--line)}
+#acxClose:hover{background:var(--blue-soft);color:var(--ink)}
+.acxRow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid var(--line)}
+.acxRowText{display:flex;flex-direction:column;gap:2px}
+.acxLabel{font-size:14px;font-weight:600;color:var(--ink)}
+.acxNote{font-size:11.5px;color:var(--ink-soft);line-height:1.35}
+.acxEnabled{font-size:12px;font-weight:700;color:var(--green)}
+.acxToggle{position:relative;width:46px;height:26px;border-radius:99px;background:var(--line);border:none;flex-shrink:0;transition:background .15s;cursor:pointer}
+.acxToggle.on{background:var(--green)}
+.acxToggle[disabled]{opacity:.4;cursor:not-allowed}
+.acxKnob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
+.acxToggle.on .acxKnob{left:23px}
+.acxSeg{display:inline-flex;border:1px solid var(--line);border-radius:99px;overflow:hidden}
+.acxSeg button{font-size:12px;font-weight:600;padding:6px 11px;color:var(--ink-soft);background:var(--paper)}
+.acxSeg button.on{background:var(--hl);color:#22303F}
+.acxActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.acxGuide{margin-top:12px;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+/* Read-aloud bar */
+#raBar{display:none;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid var(--line);background:var(--blue-soft);flex-wrap:wrap}
+#raBar .raLbl{font-size:12px;font-weight:700;color:var(--blue);display:inline-flex;align-items:center;gap:5px;margin-right:2px}
+#raBar button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--paper);font-size:13px;display:inline-flex;align-items:center;justify-content:center}
+#raBar button:hover{background:var(--page)}
+#raBar select{font-size:12px;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
+.ra-current{background:var(--hl-soft) !important;border-radius:5px;box-shadow:0 0 0 3px var(--hl-soft)}
+.msgRead{margin-top:6px;font-size:11px;font-weight:600;color:var(--blue);border:1px solid var(--line);border-radius:7px;padding:2px 8px;background:var(--paper);display:inline-flex;gap:4px;align-items:center}
+.raMini{font-size:11.5px;font-weight:600;color:var(--blue);border:1px solid var(--line);border-radius:8px;padding:4px 9px;background:var(--paper);margin-top:8px}
+/* Mic + voice indicator */
+#micBtn{flex:0 0 auto;width:42px;border-radius:9px;border:1px solid var(--line);background:var(--paper);font-size:15px;cursor:pointer}
+#micBtn:hover{background:var(--blue-soft)}
+#micBtn.listening{background:var(--rust);color:#fff;border-color:var(--rust);animation:micpulse 1.1s infinite}
+@keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(179,84,63,.5)}50%{box-shadow:0 0 0 7px rgba(179,84,63,0)}}
+#vcIndicator{display:none;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#fff;background:var(--rust);border-radius:99px;padding:3px 9px;margin-left:auto}
+/* Concept map: outline view */
+#mapViewSeg{display:inline-flex;border:1px solid var(--line);border-radius:99px;overflow:hidden}
+#mapViewSeg button{font-size:11.5px;font-weight:600;padding:5px 11px;color:var(--ink-soft);background:var(--paper)}
+#mapViewSeg button.on{background:var(--hl);color:#22303F}
+#outlineView{display:none;padding:12px 16px 20px;overflow-y:auto}
+.olItem{padding:11px 0;border-bottom:1px solid var(--line)}
+.olItem:last-child{border-bottom:none}
+.olItem h3{font-size:15px;margin:0 0 4px;color:var(--ink)}
+.olMastery{font-size:12.5px;font-weight:600;margin:0 0 6px}
+.olMastery.g{color:var(--green)} .olMastery.a{color:var(--amber)} .olMastery.r{color:var(--rust)}
+.olConn{font-size:12px;color:var(--ink-soft);margin:0 0 3px}
+#outlineView ul{margin:0 0 0 18px;font-size:12.5px;color:var(--ink)}
+/* ---- High contrast ---- */
+body.acx-contrast{--paper:#ffffff;--page:#ffffff;--ink:#000000;--ink-soft:#1a1a1a;--line:#000000;--blue:#0b3d91;--blue-soft:#dbe6fb;--hl:#ffd400;--hl-soft:#fff3ad;--green:#0a6b2f;--green-soft:#d7f0de;--amber:#8a5300;--amber-soft:#ffe9c4;--rust:#a11313;--rust-soft:#ffd6d6;--shadow:0 0 0 1px #000}
+body.acx-contrast .card,body.acx-contrast .iconbtn,body.acx-contrast .qOpt,body.acx-contrast .pill,body.acx-contrast .aStep,body.acx-contrast #panel,body.acx-contrast .bar{border-color:#000 !important}
+body.acx-contrast .btn.ghost{border:2px solid #0b3d91}
+body.acx-contrast *:focus-visible{outline:3px solid #0b3d91 !important;outline-offset:2px}
+body.acx-contrast .brandAI{color:#8a5300}
+body.acx-contrast .pill.demo{color:#ffffff}
+/* ---- Large text ---- */
+body.acx-text-large .msg,body.acx-text-large .qOpt,body.acx-text-large .hint,body.acx-text-large .aStepTitle{font-size:14.5px}
+body.acx-text-xlarge .msg,body.acx-text-xlarge .qOpt,body.acx-text-xlarge .hint,body.acx-text-xlarge .aStepTitle{font-size:16px}
+body.acx-text-xlarge #panelTabs button,body.acx-text-large #panelTabs button{font-size:13px}
+/* ---- Easy interaction ---- */
+body.acx-easy .iconbtn{width:42px;height:42px;font-size:17px}
+body.acx-easy .btn{padding:12px 20px}
+body.acx-easy #panelTabs button{padding:15px 8px;font-size:13.5px}
+body.acx-easy .qOpt{padding:15px 16px;font-size:14.5px;margin-bottom:10px}
+body.acx-easy #readerBar,body.acx-easy #raBar{gap:12px}
+body.acx-easy .aStep{padding:15px}
+body.acx-easy .acxToggle{transform:scale(1.15)}
+body.acx-easy *:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+body.acx-easy .iconbtn[data-label]{width:auto;padding:0 12px;gap:6px}
+body.acx-easy .iconbtn[data-label]::after{content:attr(data-label);font-size:12px;font-weight:600}
+body.acx-easy .iconbtn[data-label] .hlbl{display:none}
+/* ---- Reduce motion ---- */
+body.acx-motion *,body.acx-motion *::before,body.acx-motion *::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
+body.acx-motion #micBtn.listening{animation:none}
+@media(max-width:560px){ #acxCard{padding:20px 16px} #raBar{gap:6px;padding:6px 10px} }
 </style>
 </head>
 <body data-theme="light">
+<a class="skip-link" href="#readerScroll">Skip to document</a>
+<a class="skip-link" href="#panel">Skip to learning tools</a>
+<div id="acxLive" class="sr-only" role="status" aria-live="polite"></div>
+<div id="acxLiveAssertive" class="sr-only" role="alert" aria-live="assertive"></div>
 
 <div id="topbar" role="banner">
   <button class="brand" id="homeBrand" title="Home">
@@ -414,7 +500,8 @@ body.focus-mode #progressSub{max-width:940px;margin-left:auto;margin-right:auto}
   </select>
   <button class="iconbtn" id="fsMinus" title="Smaller text">A−</button>
   <button class="iconbtn" id="fsPlus" title="Larger text">A+</button>
-  <button class="iconbtn" id="themeBtn" title="Toggle dark mode">◐</button>
+  <button class="iconbtn" id="acxBtn" title="Accessibility" aria-label="Accessibility settings" aria-haspopup="dialog" data-label="Access">♿</button>
+  <button class="iconbtn" id="themeBtn" title="Toggle dark mode" aria-label="Toggle dark mode" data-label="Theme">◐</button>
   <button class="iconbtn hbtn" id="homeBtn" title="Home"><span aria-hidden="true">⌂</span><span class="hlbl">Home</span></button>
 </div>
 
@@ -449,15 +536,24 @@ body.focus-mode #progressSub{max-width:940px;margin-left:auto;margin-right:auto}
     <!-- Reader -->
     <div id="reader" style="display:none;flex:1;flex-direction:column;min-height:0">
       <div id="readerBar">
-        <button class="iconbtn" id="prevBtn" title="Previous page">‹</button>
-        <button class="iconbtn" id="nextBtn" title="Next page">›</button>
-        <button class="iconbtn" id="bmBtn" title="Bookmark this page" aria-label="Bookmark this page" aria-pressed="false">🔖</button>
-        <button class="iconbtn" id="hlModeBtn" title="Highlighter: click a paragraph to highlight" aria-label="Highlighter" aria-pressed="false">🖍️</button>
-        <button class="iconbtn" id="readFontBtn" title="Easy-reading font (dyslexia-friendly)" aria-label="Toggle easy-reading font" aria-pressed="false">🔡</button>
+        <button class="iconbtn" id="prevBtn" title="Previous page" aria-label="Previous page" data-label="Previous">‹</button>
+        <button class="iconbtn" id="nextBtn" title="Next page" aria-label="Next page" data-label="Next">›</button>
+        <button class="iconbtn" id="bmBtn" title="Bookmark this page" aria-label="Bookmark this page" aria-pressed="false" data-label="Bookmark">🔖</button>
+        <button class="iconbtn" id="hlModeBtn" title="Highlighter: click a paragraph to highlight" aria-label="Highlighter" aria-pressed="false" data-label="Highlight">🖍️</button>
+        <button class="iconbtn" id="readFontBtn" title="Easy-reading font (dyslexia-friendly)" aria-label="Toggle easy-reading font" aria-pressed="false" data-label="Easy font">🔡</button>
         <span id="pgInfo"></span>
         <div class="grow"></div>
         <button class="btn ghost" id="quizPageBtn" style="padding:6px 12px;font-size:12px">Quiz me on this</button>
         <button class="iconbtn hbtn" id="exitReadBtn" title="Exit to Home" style="margin-left:8px"><span aria-hidden="true">✕</span><span class="hlbl">Exit</span></button>
+      </div>
+      <div id="raBar" role="group" aria-label="Read aloud controls" style="display:none">
+        <span class="raLbl"><span aria-hidden="true">🔊</span> Read aloud</span>
+        <button id="raPrev" aria-label="Previous">‹</button>
+        <button id="raPlay" aria-label="Play reading">▶</button>
+        <button id="raNext" aria-label="Next">›</button>
+        <button id="raStop" aria-label="Stop reading">■</button>
+        <label class="sr-only" for="raSpeed">Reading speed</label>
+        <select id="raSpeed" aria-label="Reading speed"><option value="0.75">0.75x</option><option value="1" selected>1.0x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option></select>
       </div>
       <div id="readerScroll">
         <div id="progressRail"><div id="progressFill"></div></div>
@@ -492,6 +588,7 @@ body.focus-mode #progressSub{max-width:940px;margin-left:auto;margin-right:auto}
             <button id="modeSocratic" class="on" title="The tutor guides you with questions" aria-pressed="true">Guide me</button>
             <button id="modeDirect" title="The tutor answers directly" aria-pressed="false">Just answer</button>
           </div>
+          <span id="vcIndicator" aria-hidden="true"><span aria-hidden="true">🎤</span> Voice on</span>
           <span style="margin-left:auto">Level</span>
           <select class="ctl" id="levelSel" style="font-size:11px;padding:4px 6px" aria-label="Explanation difficulty level">
             <option value="simple">Simple</option><option value="standard" selected>Standard</option><option value="advanced">Advanced</option>
@@ -499,6 +596,7 @@ body.focus-mode #progressSub{max-width:940px;margin-left:auto;margin-right:auto}
         </div>
         <div id="chatInputRow">
           <textarea id="chatInput" rows="1" placeholder="Ask about what you're reading…"></textarea>
+          <button id="micBtn" title="Ask by voice" aria-label="Ask by voice"><span aria-hidden="true">🎤</span></button>
           <button class="btn" id="chatSend">Send</button>
         </div>
       </div>
@@ -522,8 +620,9 @@ body.focus-mode #progressSub{max-width:940px;margin-left:auto;margin-right:auto}
         <div class="pv-pad" style="padding-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <button class="btn ghost" id="buildGraphBtn" style="padding:6px 12px;font-size:12px">Map this chapter's concepts</button>
           <span class="hint" id="graphHint"></span>
+          <div id="mapViewSeg" role="group" aria-label="Concept map view" style="margin-left:auto"><button data-mv="graph" class="on" aria-pressed="true">Graph</button><button data-mv="outline" aria-pressed="false">Outline</button></div>
         </div>
-        <div id="graphBox">
+        <div id="graphViewWrap"><div id="graphBox">
           <svg id="graphSvg"></svg>
           <div id="graphEmpty">No concept map yet.<br>Open a lesson and press “Map this chapter's concepts.”</div>
         </div>
@@ -532,7 +631,8 @@ body.focus-mode #progressSub{max-width:940px;margin-left:auto;margin-right:auto}
           <span><i style="background:var(--amber)"></i>Developing (50–74%)</span>
           <span><i style="background:var(--rust)"></i>Needs review (&lt;50%)</span>
           <span><i style="background:var(--ink-soft)"></i>Not assessed</span>
-        </div>
+        </div></div>
+        <div id="outlineView" role="region" aria-label="Concept map outline" tabindex="0"></div>
       </div>
     </div>
 
@@ -550,6 +650,15 @@ body.focus-mode #progressSub{max-width:940px;margin-left:auto;margin-right:auto}
     </div>
     <div id="aboutModalPad"></div>
     <button class="btn" id="aboutStart" style="width:100%;justify-content:center;margin-top:10px">Start exploring</button>
+  </div>
+</div>
+
+<!-- Accessibility settings -->
+<div id="acxOverlay" aria-hidden="true">
+  <div id="acxCard" role="dialog" aria-modal="true" aria-labelledby="acxTitle">
+    <button id="acxClose" title="Close" aria-label="Close accessibility settings">✕</button>
+    <div class="aboutHead"><span class="logo" style="font-size:19px" id="acxTitle"><span class="brandName">Accessibility</span></span><div class="eyebrow" style="margin-top:6px">DigiBook adapts to how you interact</div></div>
+    <div id="acxBody"></div>
   </div>
 </div>
 
@@ -579,6 +688,8 @@ const S = {
   bookmarks:{}, highlights:{},
   adaptive:{signals:{},improvements:[],completed:[]},
   srs:{},
+  acx:{readAloud:false,autoReadTutor:false,speechRate:1,highContrast:false,textSize:'default',easyInteraction:false,voiceCommands:false,reduceMotion:false},
+  mapView:'graph',
   level:'standard',
   aiOK:false,
 };
@@ -1005,6 +1116,7 @@ function enterReader(){
   $('#reader').style.display='flex';
   $('#bookTitleBar').textContent=S.book.title;
   const fb=$('#focusBtn'); if(fb)fb.style.display='inline-flex';
+  const rb=$('#raBar'); if(rb)rb.style.display=(S.acx&&S.acx.readAloud)?'flex':'none';
   startReadTimer();
 }
 function goLibrary(){
@@ -1071,6 +1183,7 @@ function afterPage(){
   $('#readerScroll').scrollTop=0;
   S.stats.pagesRead++; save();
   updateStats();
+  announce((S.book?S.book.title+'. ':'')+'Page '+(S.page+1)+' of '+n+'.');
 }
 function gotoPage(p){
   const n=pageCount(); p=Math.max(0,Math.min(n-1,p)); if(p===S.page&&S.pageText)return;
@@ -1133,7 +1246,7 @@ document.addEventListener('mousedown',e=>{ if(!closestOf(e.target,'#selPop'))pop
 function ctx(){ return S.pageText? `\n\nContext — the passage the student is currently reading:\n"""${S.pageText.slice(0,1800)}"""`:''; }
 const TUTOR_SYS=`You are the DigiBook AI tutor, a warm, encouraging teacher for students and lifelong learners. Keep answers clear and concise. Never mention which AI model or company powers you; you are simply "the DigiBook AI tutor." Use plain language and concrete examples.`;
 
-function pushChat(role,content,src){ S.chat.push({role,content,src}); renderChat(); }
+function pushChat(role,content,src){ S.chat.push({role,content,src}); renderChat(); if(role==='ai' && S.acx && S.acx.readAloud && S.acx.autoReadTutor) raSpeakOnce(content); }
 function openTutor(){ switchTab('learn'); }
 
 async function defineWord(w){
@@ -1184,11 +1297,14 @@ function renderChat(){
     log.innerHTML=`<div class="msg sys">Ask me anything about what you're reading.<br>Select a word or paragraph in the text to define, translate, or explain it.</div>`;
     return;
   }
-  log.innerHTML=S.chat.map(m=>{
+  const canRead=(S.acx && S.acx.readAloud && TTS_OK);
+  log.innerHTML=S.chat.map((m,i)=>{
     if(m.role==='sys')return `<div class="msg sys">${esc(m.content)}</div>`;
     const src=m.src==='offline'?`<span class="src">tutor offline — reconnect for a live answer</span>`:'';
-    return `<div class="msg ${m.role==='user'?'user':'ai'}">${esc(m.content)}${src}</div>`;
+    const rd=(m.role==='ai'&&canRead)?`<button class="msgRead" data-i="${i}" aria-label="Read this response aloud"><span aria-hidden="true">🔊</span> Read</button>`:'';
+    return `<div class="msg ${m.role==='user'?'user':'ai'}">${esc(m.content)}${src}${rd}</div>`;
   }).join('');
+  log.querySelectorAll('.msgRead').forEach(b=>b.onclick=()=>{ const m=S.chat[+b.dataset.i]; if(m)raSpeakOnce(m.content); });
   log.scrollTop=log.scrollHeight;
 }
 function typingMsg(){
@@ -1214,7 +1330,7 @@ async function sendChat(){
   const usr=`Respond in ${lang}.${ctx()}\n\nConversation so far:\n${history}\n\nRespond as the tutor to the student's latest message.`;
   const r=await callAI(sys,usr);
   t.remove();
-  if(r){ pushChat('ai',r); noteConceptFromText(q); aTrackText(q,'tutor'); }
+  if(r){ pushChat('ai',r); noteConceptFromText(q); aTrackText(q,'tutor'); announce('AI tutor response ready.'); }
   else pushChat('ai',`(Tutor offline) I can't reach the AI tutor right now, so I can't respond live. Your question is saved above — try again once the connection is back.`,'offline');
 }
 
@@ -1360,7 +1476,7 @@ function renderQuiz(){
   if(Q.done){ return renderQuizResult(); }
   const offNote=Q.offline?' <br><span style="color:var(--amber)">Built-in offline quiz (AI tutor is offline).</span>':'';
   const focusNote=(Q.focus&&Q.focus.length)?`<div class="card" style="border-left:3px solid var(--blue)"><h4>Adaptive focus</h4><p class="hint">Targeting concepts you're still building: <b>${Q.focus.map(esc).join(', ')}</b>. Answer well and they'll rise in your model.</p></div>`:'';
-  let html=`<div class="card"><h4>Quick quiz · ${Q.items.length} questions</h4><p class="hint">Answer each, then submit. Your results update your student model and knowledge graph.${offNote}</p></div>${focusNote}`;
+  let html=`<div class="card"><h4>Quick quiz · ${Q.items.length} questions</h4><p class="hint">Answer each, then submit. Your results update your student model and knowledge graph.${offNote}</p>${S.acx&&S.acx.readAloud&&TTS_OK?'<button class="raMini" id="raQuiz"><span aria-hidden="true">🔊</span> Read quiz aloud</button>':''}</div>${focusNote}`;
   Q.items.forEach((it,qi)=>{
     html+=`<div class="qCard" data-q="${qi}"><div class="qq">${qi+1}. ${esc(it.q)}</div>`;
     it.options.forEach((op,oi)=>{
@@ -1378,6 +1494,7 @@ function renderQuiz(){
     b.classList.add('sel');
   });
   $('#submitQuiz').onclick=submitQuiz;
+  const rq=$('#raQuiz'); if(rq)rq.onclick=()=>raSpeakOnce(Q.items.map((it,qi)=>`Question ${qi+1}. ${it.q}. Options: `+it.options.map((o,oi)=>'ABCD'[oi]+', '+o).join('. ')).join('. '));
 }
 function submitQuiz(){
   const Q=S.quiz;
@@ -1395,7 +1512,7 @@ function submitQuiz(){
   });
   if(S.quiz.adaptiveConcept){ S.adaptive.completed.unshift({concept:aKey(S.quiz.adaptiveConcept),at:Date.now(),pct:Math.round(correct/Q.items.length*100)}); S.adaptive.completed=S.adaptive.completed.slice(0,30); }
   S.stats.quizzesTaken++; S.stats.quizCorrect+=correct; S.stats.quizTotal+=Q.items.length; save();
-  Q.correct=correct; renderQuizResult(); updateStats(); adaptiveRecalc();
+  Q.correct=correct; announce('Quiz complete. You scored '+correct+' out of '+Q.items.length+'.',true); renderQuizResult(); updateStats(); adaptiveRecalc();
 }
 function renderQuizResult(){
   const pad=$('#quizPad'),Q=S.quiz;
@@ -1568,7 +1685,10 @@ function renderGraph(){
     edges.forEach(e=>{const a=idx[e[0]],b=idx[e[1]];h+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`;});
     nodes.forEach(n=>{const c=nodeColor(n.id);const s=conceptScore(n.id);
       const label=n.id.length>16?n.id.slice(0,15)+'…':n.id;
-      h+=`<g class="node" data-id="${esc(n.id)}"><circle cx="${n.x}" cy="${n.y}" r="${s!=null?22:18}" fill="${c.fill}" stroke="${c.stroke}"/><text x="${n.x}" y="${n.y+34}" text-anchor="middle">${esc(label)}</text></g>`;
+      const _bd=s==null?'not assessed':(s>=75?'strong':s>=50?'developing':'needs review');
+      const _nb=(S.graph.edges||[]).filter(e=>e[0]===n.id||e[1]===n.id).map(e=>e[0]===n.id?e[1]:e[0]);
+      const _al=`${n.id}. ${_bd}${s==null?'':', '+Math.round(s)+' percent'}. ${_nb.length?'connected to '+_nb.join(', '):'no connections'}.`;
+      h+=`<g class="node" role="img" aria-label="${esc(_al)}" data-id="${esc(n.id)}"><circle cx="${n.x}" cy="${n.y}" r="${s!=null?22:18}" fill="${c.fill}" stroke="${c.stroke}"/><text x="${n.x}" y="${n.y+34}" text-anchor="middle" aria-hidden="true">${esc(label)}</text></g>`;
     });
     svg.innerHTML=h;
     svg.querySelectorAll('.node').forEach(g=>{
@@ -1637,6 +1757,7 @@ function switchTab(name){
   if(name==='progress')progressSub(S.progressSub||'mastery');
   if(name==='about')renderAbout();
   if(name==='quiz' && !S.quiz)renderQuizIdle();
+  announce(name.charAt(0).toUpperCase()+name.slice(1)+' tab.');
 }
 function progressSub(name){
   S.progressSub=name;
@@ -1877,7 +1998,7 @@ function renderAdaptive(){
         <div class="aMeta">⏱ About ${lessonMin} min</div>
       </div>
     </div>
-    <button class="btn aStart" id="aStart"><span aria-hidden="true">▶</span> Start now</button></div>`;
+    ${S.acx&&S.acx.readAloud&&TTS_OK?`<button class="raMini" id="raNext2" style="margin-right:8px"><span aria-hidden="true">🔊</span> Read</button>`:''}<button class="btn aStart" id="aStart"><span aria-hidden="true">▶</span> Start now</button></div>`;
 
   // WHY THIS STEP
   h+=`<div class="card aWhy"><h3 class="aH5">Why DigiBook chose this</h3><ul class="aSignals">${reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>
@@ -1922,11 +2043,12 @@ function renderAdaptive(){
   pad.innerHTML=h;
   $('#aHowBtn').onclick=()=>{ const e=$('#aHow'); e.style.display=e.style.display==='none'?'block':'none'; };
   $('#aStart').onclick=()=>startAdaptiveLesson(rec.name);
+  const rn=$('#raNext2'); if(rn)rn.onclick=()=>raSpeakOnce('Next best step. '+aDisplay(rec.name)+'. '+reasons.join('. ')+'. Estimated '+lessonMin+' minutes.');
   $('#aRecalc').onclick=()=>{ adaptiveRecalc(true); };
   pad.querySelectorAll('.aStep').forEach(b=>b.onclick=()=>startPathStep(b.dataset.type,b.dataset.concept));
 }
 
-function adaptiveRecalc(manual){ save(); const sv=$('#sv-adaptive'); if(sv&&sv.classList.contains('active'))renderAdaptive(); if(manual)toast('Path recalculated from your latest activity'); }
+function adaptiveRecalc(manual){ save(); const sv=$('#sv-adaptive'); if(sv&&sv.classList.contains('active'))renderAdaptive(); if(manual){ toast('Path recalculated from your latest activity'); const r=aRecommend(); if(r)announce('Your learning path updated. Next recommended concept, '+aDisplay(r.name)+'.'); } }
 
 /* ---- Adaptive lesson ---- */
 function gotoConceptPage(concept){
@@ -2047,12 +2169,191 @@ function toggleFocus(force){
   const rc=$('#readerCol'),pn=$('#panel');
   if(rc)rc.setAttribute('role',on?'presentation':'main');
   if(pn)pn.setAttribute('role',on?'main':'complementary');
+  announce(on?'Focus mode. Learning workspace expanded.':'Split view. Document reader and learning tools visible.');
   const fb=$('#focusBtn');
   if(fb){ fb.innerHTML=on?'<span aria-hidden="true">📖</span> Back to Reader':'<span aria-hidden="true">⛶</span> Expand';
     fb.setAttribute('aria-label',on?'Back to reader':'Expand workspace'); fb.setAttribute('aria-pressed',on?'true':'false'); }
   if(!on && sc && S._scrollTop!=null) sc.scrollTop=S._scrollTop;   // restore reading position
   if($('#pv-progress')&&$('#pv-progress').classList.contains('active') && S.progressSub==='map') setTimeout(renderGraph,40);
 }
+
+/* ============ Accessibility ============
+   One cohesive system: Vision & Reading, Motor & Mobility, Comfort.
+   Reuses existing state, tabs, reader, tutor, quiz, adaptive and localStorage.
+   All speech features degrade gracefully when the browser lacks the APIs. */
+const TTS = (typeof window!=='undefined' && window.speechSynthesis) ? window.speechSynthesis : null;
+const TTS_OK = !!TTS && (typeof SpeechSynthesisUtterance!=='undefined');
+const SR_CLASS = (typeof window!=='undefined') ? (window.SpeechRecognition||window.webkitSpeechRecognition) : null;
+const SR_OK = !!SR_CLASS;
+
+function acxLoad(){ try{ const d=JSON.parse(localStorage.getItem(LS+'_acx')||'null'); if(d)Object.assign(S.acx,d);}catch(e){} }
+function acxSave(){ try{ localStorage.setItem(LS+'_acx',JSON.stringify(S.acx)); }catch(e){} }
+// Screen-reader announcements via visually-hidden live regions.
+function announce(msg,assertive){ const el=$(assertive?'#acxLiveAssertive':'#acxLive'); if(!el)return; el.textContent=''; setTimeout(()=>{ el.textContent=String(msg||''); },40); }
+
+function applyAcx(){
+  const a=S.acx;
+  document.body.classList.toggle('acx-contrast',!!a.highContrast);
+  document.body.classList.toggle('acx-easy',!!a.easyInteraction);
+  document.body.classList.toggle('acx-motion',!!a.reduceMotion);
+  document.body.classList.toggle('acx-text-large',a.textSize==='large');
+  document.body.classList.toggle('acx-text-xlarge',a.textSize==='xlarge');
+  readFS = a.textSize==='xlarge'?26:a.textSize==='large'?23:19;
+  document.documentElement.style.setProperty('--readfs',readFS+'px');
+  const bar=$('#raBar'); if(bar) bar.style.display=(a.readAloud && S.book && $('#reader').style.display!=='none')?'flex':'none';
+  if(!a.readAloud) raStop();
+  if(a.voiceCommands && SR_OK) vcStart(); else vcStop();
+  if($('#chatLog')) renderChat();
+}
+
+/* ---------- Accessibility panel ---------- */
+function acxSwitch(key,label,disabled,note){
+  const on=!!S.acx[key];
+  return `<div class="acxRow"><span class="acxRowText"><span class="acxLabel">${esc(label)}</span>${note?`<span class="acxNote">${esc(note)}</span>`:''}</span>
+    <button class="acxToggle${on?' on':''}" role="switch" aria-checked="${on?'true':'false'}" aria-label="${esc(label)}" data-key="${key}"${disabled?' disabled':''}><span class="acxKnob" aria-hidden="true"></span></button></div>`;
+}
+function renderAcxPanel(){
+  const pad=$('#acxBody'); if(!pad)return;
+  const ts=S.acx.textSize;
+  pad.innerHTML=`
+    <h2 class="aboutH">Vision &amp; Reading</h2>
+    ${acxSwitch('readAloud','Read aloud',!TTS_OK,TTS_OK?'Hear the page, tutor answers, quizzes and recommendations':'Not available in this browser')}
+    ${acxSwitch('autoReadTutor','Automatically read tutor responses',!TTS_OK,'Off by default')}
+    <div class="acxRow"><span class="acxRowText"><span class="acxLabel">Text size</span></span>
+      <span class="acxSeg" role="group" aria-label="Text size">
+        <button data-ts="default" class="${ts==='default'?'on':''}" aria-pressed="${ts==='default'}">Default</button>
+        <button data-ts="large" class="${ts==='large'?'on':''}" aria-pressed="${ts==='large'}">Large</button>
+        <button data-ts="xlarge" class="${ts==='xlarge'?'on':''}" aria-pressed="${ts==='xlarge'}">Extra large</button>
+      </span></div>
+    ${acxSwitch('highContrast','High contrast')}
+    <h2 class="aboutH">Motor &amp; Mobility</h2>
+    ${acxSwitch('easyInteraction','Easy interaction mode',false,'Bigger buttons, more spacing, clearer labels')}
+    ${acxSwitch('voiceCommands','Voice commands',!SR_OK,SR_OK?'Navigate and answer by speaking':'Not available in this browser')}
+    <div class="acxRow"><span class="acxRowText"><span class="acxLabel">Keyboard navigation</span><span class="acxNote">Always on. Tab, Enter, arrows, Esc.</span></span><span class="acxEnabled">Enabled</span></div>
+    <h2 class="aboutH">Comfort</h2>
+    ${acxSwitch('reduceMotion','Reduce motion')}
+    <div class="acxActions">
+      <button class="btn ghost" id="acxGuideBtn" style="padding:8px 12px;font-size:12px" aria-expanded="false" aria-controls="acxGuide">Accessibility guide</button>
+      <button class="btn ghost" id="acxReset" style="padding:8px 12px;font-size:12px">Reset accessibility settings</button>
+    </div>
+    <div id="acxGuide" class="acxGuide" hidden>
+      <p class="hint"><b>Keyboard:</b> Tab and Shift+Tab move between controls, Enter or Space activates, arrows move within a group, Esc closes menus. Skip links at the very top jump to the document or the tools.</p>
+      <p class="hint"><b>Read aloud:</b> turn it on, then use the reader's play bar, or select text first to hear only that. Each tutor answer gets a speaker button.</p>
+      <p class="hint"><b>Voice:</b> the tutor has an "Ask by voice" mic. With Voice commands on, say phrases like "Open quiz", "Read page", "Next page", or "Answer A".</p>
+      <p class="hint"><b>Screen readers:</b> DigiBook announces page changes, quiz feedback and path updates, and the Concept Map offers an Outline view.</p>
+    </div>`;
+  pad.querySelectorAll('.acxToggle').forEach(b=>{ if(b.disabled)return; b.onclick=()=>{ const k=b.dataset.key; S.acx[k]=!S.acx[k]; acxSave(); applyAcx(); renderAcxPanel(); const names={readAloud:'Read aloud',autoReadTutor:'Auto read tutor responses',highContrast:'High contrast',easyInteraction:'Easy interaction mode',voiceCommands:'Voice commands',reduceMotion:'Reduce motion'}; toast((names[k]||'Setting')+' '+(S.acx[k]?'on':'off')); announce((names[k]||'Setting')+' '+(S.acx[k]?'enabled':'disabled')); }; });
+  pad.querySelectorAll('.acxSeg button').forEach(b=>{ b.onclick=()=>{ S.acx.textSize=b.dataset.ts; acxSave(); applyAcx(); renderAcxPanel(); announce('Text size '+b.dataset.ts.replace('xlarge','extra large')); }; });
+  const g=$('#acxGuideBtn'); if(g)g.onclick=()=>{ const el=$('#acxGuide'); const hidden=el.hasAttribute('hidden'); if(hidden){el.removeAttribute('hidden');g.setAttribute('aria-expanded','true');}else{el.setAttribute('hidden','');g.setAttribute('aria-expanded','false');} };
+  const r=$('#acxReset'); if(r)r.onclick=acxReset;
+}
+function acxReset(){ S.acx={readAloud:false,autoReadTutor:false,speechRate:1,highContrast:false,textSize:'default',easyInteraction:false,voiceCommands:false,reduceMotion:false}; acxSave(); applyAcx(); renderAcxPanel(); toast('Accessibility settings reset'); announce('Accessibility settings reset'); }
+function openAcx(){ renderAcxPanel(); const o=$('#acxOverlay'); o.classList.add('open'); o.setAttribute('aria-hidden','false'); const c=$('#acxClose'); if(c)setTimeout(()=>c.focus(),30); }
+function closeAcx(){ const o=$('#acxOverlay'); o.classList.remove('open'); o.setAttribute('aria-hidden','true'); const b=$('#acxBtn'); if(b)b.focus(); }
+
+/* ---------- Read Aloud ---------- */
+let raState={chunks:[],idx:0,playing:false};
+function raStopHighlight(){ $$('.ra-current').forEach(e=>e.classList.remove('ra-current')); }
+function raStop(){ try{ if(TTS)TTS.cancel(); }catch(e){} raState.playing=false; raStopHighlight(); raUpdateBar(); }
+function raCollect(){
+  const sel=(window.getSelection?String(window.getSelection()):'').trim();
+  if(sel && sel.length>1) return [{text:sel,el:null}];
+  const ps=$$('#textPage p'); if(ps.length) return ps.map(p=>({text:p.textContent,el:p}));
+  if(S.pageText) return S.pageText.split(/(?<=[.!?])\s+/).filter(Boolean).map(t=>({text:t,el:null}));
+  return [];
+}
+function raSpeakChunk(){
+  if(!TTS_OK)return; raStopHighlight();
+  const c=raState.chunks[raState.idx]; if(!c){ raStop(); return; }
+  if(c.el){ c.el.classList.add('ra-current'); try{c.el.scrollIntoView({block:'center',behavior:S.acx.reduceMotion?'auto':'smooth'});}catch(e){} }
+  try{TTS.cancel();}catch(e){}
+  const u=new SpeechSynthesisUtterance(c.text); u.rate=S.acx.speechRate||1;
+  u.onend=()=>{ if(!raState.playing)return; if(raState.idx<raState.chunks.length-1){ raState.idx++; raSpeakChunk(); } else { raState.playing=false; raStopHighlight(); raUpdateBar(); } };
+  TTS.speak(u); raState.playing=true; raUpdateBar();
+}
+function raPlayPage(){ if(!TTS_OK){announce('Read aloud is not available in this browser',true);return;} raState.chunks=raCollect(); raState.idx=0; if(!raState.chunks.length){announce('Nothing to read here');return;} raState.playing=true; raSpeakChunk(); }
+function raToggle(){ if(!TTS_OK){announce('Read aloud is not available in this browser',true);return;} if(TTS.speaking && !TTS.paused){ TTS.pause(); raState.playing=false; } else if(TTS.paused){ TTS.resume(); raState.playing=true; } else { raPlayPage(); } raUpdateBar(); }
+function raNext(){ if(!raState.chunks.length){raPlayPage();return;} if(raState.idx<raState.chunks.length-1){raState.idx++; raState.playing=true; raSpeakChunk();} }
+function raPrev(){ if(!raState.chunks.length){raPlayPage();return;} if(raState.idx>0){raState.idx--; raState.playing=true; raSpeakChunk();} }
+function raSetSpeed(v){ S.acx.speechRate=parseFloat(v)||1; acxSave(); if(raState.playing) raSpeakChunk(); }
+function raSpeakOnce(text){ if(!TTS_OK||!text)return; try{TTS.cancel();}catch(e){} const u=new SpeechSynthesisUtterance(String(text)); u.rate=S.acx.speechRate||1; TTS.speak(u); }
+function raUpdateBar(){ const pp=$('#raPlay'); if(pp){ const playing=TTS&&TTS.speaking&&!TTS.paused; pp.textContent=playing?'⏸':'▶'; pp.setAttribute('aria-label',playing?'Pause reading':'Play reading'); } }
+
+/* ---------- Voice input (dictation) for the tutor ---------- */
+let dictation=null;
+function startDictation(){
+  if(!SR_OK){announce('Voice input is not available in this browser',true);return;}
+  const inp=$('#chatInput'), mic=$('#micBtn'); if(!inp)return;
+  try{ dictation=new SR_CLASS(); }catch(e){ return; }
+  dictation.lang='en-US'; dictation.interimResults=true; dictation.continuous=false;
+  if(mic){ mic.classList.add('listening'); mic.setAttribute('aria-label','Stop listening'); mic.title='Listening… tap to stop'; }
+  announce('Listening');
+  let finalText='';
+  dictation.onresult=(e)=>{ let interim=''; for(let i=e.resultIndex;i<e.results.length;i++){ const tr=e.results[i][0].transcript; if(e.results[i].isFinal)finalText+=tr; else interim+=tr; } inp.value=(finalText+interim).trim(); inp.dispatchEvent(new Event('input')); };
+  dictation.onerror=()=>{ stopDictation(); };
+  dictation.onend=()=>{ stopDictation(); };
+  try{ dictation.start(); }catch(e){ stopDictation(); }
+}
+function stopDictation(){ const mic=$('#micBtn'); if(dictation){ try{dictation.stop();}catch(e){} dictation=null; } if(mic){ mic.classList.remove('listening'); mic.setAttribute('aria-label','Ask by voice'); mic.title='Ask by voice'; } const inp=$('#chatInput'); if(inp)inp.focus(); }
+function toggleDictation(){ if(dictation)stopDictation(); else startDictation(); }
+
+/* ---------- Voice commands ---------- */
+let vc=null, vcActive=false;
+function vcStart(){ if(!SR_OK||vcActive)return; try{ vc=new SR_CLASS(); }catch(e){return;} vc.lang='en-US'; vc.continuous=true; vc.interimResults=false;
+  vc.onresult=(e)=>{ const t=e.results[e.results.length-1][0].transcript.toLowerCase().trim(); vcHandle(t); };
+  vc.onerror=()=>{}; vc.onend=()=>{ if(vcActive){ try{vc.start();}catch(e){} } };
+  try{ vc.start(); vcActive=true; const ind=$('#vcIndicator'); if(ind)ind.style.display='inline-flex'; announce('Voice control on'); }catch(e){}
+}
+function vcStop(){ vcActive=false; if(vc){ try{vc.stop();}catch(e){} vc=null; } const ind=$('#vcIndicator'); if(ind)ind.style.display='none'; }
+function vcSelectAnswer(oi){ const cards=[...document.querySelectorAll('.qCard')]; for(const card of cards){ if(!card.querySelector('.qOpt.sel')){ const opt=card.querySelectorAll('.qOpt')[oi]; if(opt){opt.click(); announce('Selected answer '+'ABCD'[oi]);} return; } } }
+function vcHandle(t){
+  const has=(...w)=>w.some(x=>t.includes(x));
+  if(has('open learn','go to learn'))return switchTab('learn');
+  if(has('open about'))return switchTab('about');
+  if(has('adaptive path','adaptive lesson','open adaptive'))return (switchTab('progress'),progressSub('adaptive'));
+  if(has('concept map','open map','show map'))return (switchTab('progress'),progressSub('map'));
+  if(has('open cards','flash cards','flashcards'))return (switchTab('progress'),progressSub('cards'));
+  if(has('open stats','statistics'))return (switchTab('progress'),progressSub('stats'));
+  if(has('open mastery','show mastery'))return (switchTab('progress'),progressSub('mastery'));
+  if(has('open progress'))return switchTab('progress');
+  if(has('open quiz','go to quiz'))return switchTab('quiz');
+  if(has('read page','read aloud','read this'))return raPlayPage();
+  if(has('stop reading','stop read','stop aloud'))return raStop();
+  if(has('next page'))return gotoPage(S.page+1);
+  if(has('previous page','prev page','go back a page'))return gotoPage(S.page-1);
+  if(has('quiz me','start quiz','create quiz'))return generateQuiz();
+  if(has('start adaptive lesson','start lesson')){ const r=aRecommend(); if(r)startAdaptiveLesson(r.name); return; }
+  if(has('back to reader','split view'))return toggleFocus(false);
+  if(has('focus mode','expand'))return toggleFocus(true);
+  const m=t.match(/answer ([a-d])\b/); if(m && S.quiz && !S.quiz.done){ return vcSelectAnswer('abcd'.indexOf(m[1])); }
+  if(has('next question','submit quiz','submit answers')){ const sb=$('#submitQuiz'); if(sb)sb.click(); return; }
+}
+
+/* ---------- Concept Map: accessible outline ---------- */
+function renderOutline(){
+  const box=$('#outlineView'); if(!box)return;
+  if(!S.graph||!Array.isArray(S.graph.nodes)||!S.graph.nodes.length){ box.innerHTML='<p class="hint">No concept map yet. Open a lesson, then build the map.</p>'; return; }
+  const items=S.graph.nodes.map(n=>{
+    const k=aKey(n); const c=S.concepts[k]; const sc=(c&&c.score!=null)?Math.round(c.score):null;
+    const band=sc==null?'Not assessed':aBand(sc);
+    const cls=sc==null?'':(band==='Strong'?'g':band==='Developing'?'a':'r');
+    const neigh=aNeighbors(n).map(x=>aDisplay(x));
+    return `<section class="olItem"><h3>${esc(aDisplay(n))}</h3>
+      <p class="olMastery ${cls}">Mastery: ${band}${sc==null?'':', '+sc+'%'}</p>
+      ${neigh.length?`<p class="olConn">Connected concepts:</p><ul>${neigh.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p class="olConn">No mapped connections.</p>'}</section>`;
+  }).join('');
+  box.innerHTML='<h2 class="sr-only">Concept map outline</h2>'+items;
+}
+function setMapView(v){
+  S.mapView=v;
+  $$('#mapViewSeg button').forEach(b=>{ const on=b.dataset.mv===v; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false'); });
+  const g=$('#graphViewWrap'), o=$('#outlineView');
+  if(g)g.style.display=v==='graph'?'':'none';
+  if(o)o.style.display=v==='outline'?'block':'none';
+  if(v==='graph')renderGraph(); else renderOutline();
+  announce(v==='outline'?'Outline view':'Graph view');
+}
+
 
 /* ============ Wire up UI ============ */
 $('#pickBtn').onclick=()=>$('#fileInput').click();
@@ -2069,6 +2370,13 @@ $('#homeBtn').onclick=goLibrary;
 $('#homeBrand').onclick=goLibrary;
 $('#focusBtn').onclick=()=>toggleFocus();
 $('#exitReadBtn').onclick=goLibrary;
+$('#acxBtn').onclick=openAcx;
+$('#acxClose').onclick=closeAcx;
+$('#acxOverlay').addEventListener('click',e=>{ if(e.target.id==='acxOverlay')closeAcx(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeAcx(); });
+$('#micBtn').onclick=toggleDictation;
+$('#raPlay').onclick=raToggle; $('#raPrev').onclick=raPrev; $('#raNext').onclick=raNext; $('#raStop').onclick=raStop; $('#raSpeed').onchange=e=>raSetSpeed(e.target.value);
+$$('#mapViewSeg button').forEach(b=>b.onclick=()=>setMapView(b.dataset.mv));
 $('#prevBtn').onclick=()=>gotoPage(S.page-1);
 $('#nextBtn').onclick=()=>gotoPage(S.page+1);
 $('#bmBtn').onclick=toggleBookmark;
@@ -2108,6 +2416,10 @@ $('#fsMinus').onclick=()=>{readFS=Math.max(14,readFS-1);document.documentElement
   // ping AI proxy quietly to set pill
   callAI(TUTOR_SYS,'Reply with the single word: ready').then(r=>{ setAI(!!r); });
   document.documentElement.style.setProperty('--readfs',readFS+'px');
+  acxLoad(); S.acx.voiceCommands=false; applyAcx();
+  if(!SR_OK){ const _m=$('#micBtn'); if(_m)_m.style.display='none'; }
+  const _rs=$('#raSpeed'); if(_rs)_rs.value=String(S.acx.speechRate||1);
+  setMapView(S.mapView||'graph');
 })();
 </script>
 </body>
