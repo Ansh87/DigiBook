@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DigiBook AI — The textbook that understands how you learn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Space+Grotesk:wght@400;500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+:root{
+  --paper:#F6F2E9; --page:#FDFBF5; --ink:#22303F; --ink-soft:#66727F; --line:#DED7C6;
+  --blue:#2B4C7E; --blue-soft:#E4EAF3; --hl:#FFD84D; --hl-soft:#FFF3C2;
+  --green:#3E7C59; --green-soft:#E2EFE7; --amber:#C9862B; --amber-soft:#F7ECD8;
+  --rust:#B3543F; --rust-soft:#F4E2DD; --shadow:0 2px 10px rgba(34,48,63,.08);
+  --radius:10px;
+}
+[data-theme="dark"]{
+  --paper:#12161D; --page:#1A2029; --ink:#E5E8EC; --ink-soft:#93A0AF; --line:#2C3542;
+  --blue:#7FA3D6; --blue-soft:#1F2A3C; --hl:#E8C43C; --hl-soft:#3A3218;
+  --green:#6FB98F; --green-soft:#1C2E24; --amber:#DBA553; --amber-soft:#332916;
+  --rust:#D08A77; --rust-soft:#33201B; --shadow:0 2px 10px rgba(0,0,0,.35);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--paper);color:var(--ink);overflow:hidden}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ---------- Top bar ---------- */
+#topbar{display:flex;align-items:center;gap:14px;height:62px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--page);position:relative;z-index:40}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px;letter-spacing:-.02em;white-space:nowrap}
+.logo .swipe{position:relative;padding:0 4px}
+.logo .swipe::before{content:"";position:absolute;left:0;right:0;bottom:2px;height:9px;background:var(--hl);z-index:-1;transform:skewX(-12deg)}
+#bookTitleBar{flex:1;min-width:0;font-size:13px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;border:1px solid var(--line);background:var(--paper);white-space:nowrap}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-soft)}
+.pill.live .dot{background:var(--green)} .pill.sample .dot{background:var(--amber)} .pill.offline .dot{background:var(--rust)}
+.iconbtn{width:34px;height:34px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;border:1px solid transparent}
+.iconbtn:hover{background:var(--blue-soft);border-color:var(--line)}
+select.ctl{font-family:inherit;font-size:12px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
+
+/* ---------- Layout ---------- */
+#app{display:flex;height:calc(100% - 62px)}
+#readerCol{flex:1;display:flex;flex-direction:column;min-width:0}
+#panel{width:400px;min-width:340px;border-left:1px solid var(--line);background:var(--page);display:flex;flex-direction:column}
+#panelTabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto}
+#panelTabs button{flex:1;padding:11px 6px;font-size:12px;font-weight:600;color:var(--ink-soft);border-bottom:2px solid transparent;white-space:nowrap}
+#panelTabs button.active{color:var(--blue);border-bottom-color:var(--hl)}
+.panelView{flex:1;overflow-y:auto;display:none;flex-direction:column}
+.panelView.active{display:flex}
+
+/* ---------- Library ---------- */
+#library{flex:1;overflow-y:auto;padding:40px 24px;display:flex;flex-direction:column;align-items:center}
+#library .hero{max-width:640px;text-align:center;margin-bottom:34px}
+#library h1{font-size:34px;letter-spacing:-.03em;line-height:1.15;margin-bottom:12px}
+#library h1 .swipe{position:relative;padding:0 5px;white-space:nowrap}
+#library h1 .swipe::before{content:"";position:absolute;left:0;right:0;bottom:4px;height:14px;background:var(--hl);z-index:-1;transform:skewX(-12deg)}
+#library .sub{color:var(--ink-soft);font-size:15px;line-height:1.55}
+.eyebrow{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.14em;color:var(--blue);margin-bottom:12px}
+.linkbtn{margin-top:16px;font-size:13.5px;font-weight:600;color:var(--blue);border-bottom:2px solid var(--hl);padding-bottom:2px}
+.linkbtn:hover{filter:brightness(1.1)}
+#dropzone{max-width:640px;width:100%;border:2px dashed var(--line);border-radius:14px;background:var(--page);padding:34px;text-align:center;transition:border-color .15s}
+#dropzone.drag{border-color:var(--blue)}
+#dropzone .big{font-size:15px;font-weight:600;margin-bottom:6px}
+#dropzone .small{font-size:12.5px;color:var(--ink-soft);margin-bottom:16px}
+.btn{display:inline-flex;align-items:center;gap:7px;background:var(--blue);color:#fff;font-weight:600;font-size:13.5px;padding:10px 18px;border-radius:9px}
+[data-theme="dark"] .btn{color:#0F1319}
+.btn.ghost{background:transparent;color:var(--blue);border:1px solid var(--blue)}
+.btn:hover{filter:brightness(1.08)}
+#shelf{max-width:640px;width:100%;margin-top:26px}
+#shelf h3{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-soft);margin-bottom:10px}
+.shelfItem{display:flex;align-items:center;gap:12px;background:var(--page);border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px;margin-bottom:9px;width:100%;text-align:left;cursor:pointer;transition:border-color .15s,transform .1s}
+.shelfItem:hover{border-color:var(--blue)}
+.shelfItem:active{transform:scale(.99)}
+.shelfGo{font-size:16px;color:var(--ink-soft);flex-shrink:0}
+.shelfItem:hover .shelfGo{color:var(--blue)}
+.shelfItem .spine{width:8px;align-self:stretch;border-radius:4px;background:var(--hl)}
+.shelfItem .meta{flex:1;min-width:0}
+.shelfItem .t{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.shelfItem .d{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
+
+/* ---------- Reader ---------- */
+#readerBar{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--page);flex-wrap:wrap}
+#readerBar .grow{flex:1}
+#pgInfo{font-size:12px;color:var(--ink-soft);white-space:nowrap}
+#readerScroll{flex:1;overflow-y:auto;position:relative}
+#progressRail{position:sticky;top:0;height:3px;background:transparent;z-index:5}
+#progressRail>div{height:100%;background:var(--hl);width:0%}
+#readerInner{max-width:760px;margin:0 auto;padding:34px 30px 60px}
+#textPage{font-family:'Newsreader',Georgia,serif;font-size:var(--readfs,19px);line-height:1.72;color:var(--ink)}
+#textPage h2{font-family:'Space Grotesk';font-size:1.35em;margin:1.4em 0 .5em;letter-spacing:-.02em}
+#textPage p{margin-bottom:1.05em}
+#textPage p.hl-p{background:var(--hl-soft);border-radius:4px;padding:2px 6px;margin-left:-6px;margin-right:-6px}
+#textPage ::selection{background:var(--hl)}
+[data-theme="dark"] #textPage ::selection{color:#111}
+#pdfWrap{display:flex;flex-direction:column;align-items:center;gap:18px}
+.pdfPageBox{position:relative;box-shadow:var(--shadow);background:#fff}
+.pdfPageBox canvas{display:block}
+.textLayer{position:absolute;inset:0;overflow:hidden;line-height:1;opacity:1}
+.textLayer span{color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0 0}
+.textLayer ::selection{background:rgba(255,216,77,.55)}
+#emptyReader{padding:60px 20px;text-align:center;color:var(--ink-soft);font-size:14px}
+
+/* ---------- Selection popup ---------- */
+#selPop{position:fixed;z-index:80;display:none;background:var(--ink);color:var(--paper);border-radius:10px;padding:5px;box-shadow:0 6px 24px rgba(0,0,0,.28);gap:2px}
+[data-theme="dark"] #selPop{background:#2A3442;color:#EDEFF2}
+#selPop button{color:inherit;font-size:12px;font-weight:600;padding:7px 10px;border-radius:7px;white-space:nowrap}
+#selPop button:hover{background:rgba(255,255,255,.14)}
+#selPop .divv{width:1px;background:rgba(255,255,255,.2);margin:4px 1px}
+
+/* ---------- Panel: cards & chat ---------- */
+.pv-pad{padding:16px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 15px;margin-bottom:12px}
+.card h4{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);margin-bottom:9px}
+.hint{font-size:12.5px;color:var(--ink-soft);line-height:1.5}
+#chatLog{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:88%;padding:10px 13px;border-radius:12px;font-size:13.5px;line-height:1.55;white-space:pre-wrap;word-wrap:break-word}
+.msg.user{align-self:flex-end;background:var(--blue);color:#fff;border-bottom-right-radius:4px}
+[data-theme="dark"] .msg.user{color:#0F1319}
+.msg.ai{align-self:flex-start;background:var(--paper);border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg.sys{align-self:center;font-size:11.5px;color:var(--ink-soft);background:none;padding:2px}
+.msg .src{display:block;margin-top:7px;font-size:10.5px;color:var(--ink-soft)}
+#chatBox{border-top:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:8px}
+#chatModeRow{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink-soft)}
+.toggle{display:inline-flex;border:1px solid var(--line);border-radius:99px;overflow:hidden}
+.toggle button{font-size:11px;font-weight:600;padding:5px 11px;color:var(--ink-soft)}
+.toggle button.on{background:var(--hl);color:#22303F}
+#chatInputRow{display:flex;gap:8px}
+#chatInput{flex:1;resize:none;font-family:inherit;font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);max-height:110px}
+.typing{display:inline-flex;gap:4px;padding:4px 2px}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--ink-soft);animation:tp 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes tp{0%,60%,100%{opacity:.3}30%{opacity:1}}
+
+/* ---------- Student model ---------- */
+.conceptRow{margin-bottom:13px}
+.conceptRow .top{display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:5px}
+.conceptRow .top .pct{color:var(--ink-soft);font-weight:500;font-size:12px}
+.bar{height:12px;border-radius:3px;background:var(--paper);border:1px solid var(--line);overflow:hidden}
+.bar>div{height:100%;background:var(--hl);transform:skewX(-8deg) scaleX(1.02);transform-origin:left;transition:width .5s ease}
+.bar>div.g{background:var(--green)} .bar>div.a{background:var(--amber)} .bar>div.r{background:var(--rust)}
+.legend{display:flex;gap:12px;font-size:11px;color:var(--ink-soft);margin-top:10px;flex-wrap:wrap}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}
+
+/* ---------- Quiz ---------- */
+.qCard{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:15px;margin-bottom:13px}
+.qCard .qq{font-size:14px;font-weight:600;line-height:1.45;margin-bottom:11px}
+.qOpt{display:block;width:100%;text-align:left;font-size:13px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px;background:var(--page)}
+.qOpt:hover{border-color:var(--blue)}
+.qOpt.sel{border-color:var(--blue);background:var(--blue-soft)}
+.qOpt.correct{border-color:var(--green);background:var(--green-soft)}
+.qOpt.wrong{border-color:var(--rust);background:var(--rust-soft)}
+.qExp{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin-top:8px;display:none}
+.scoreBig{font-size:40px;font-weight:700;letter-spacing:-.03em;text-align:center}
+
+/* ---------- Flashcards ---------- */
+#fcStage{perspective:1100px;margin:14px 0}
+#fcCard{position:relative;width:100%;height:210px;transform-style:preserve-3d;transition:transform .45s;cursor:pointer}
+#fcCard.flip{transform:rotateY(180deg)}
+.fcFace{position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;border:1px solid var(--line);background:var(--paper);display:flex;align-items:center;justify-content:center;padding:22px;text-align:center;font-size:16px;line-height:1.5;box-shadow:var(--shadow)}
+.fcFace.back{transform:rotateY(180deg);background:var(--hl-soft)}
+.fcFace .lbl{position:absolute;top:10px;left:14px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
+#fcNav{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--ink-soft)}
+
+/* ---------- Graph ---------- */
+#graphBox{flex:1;position:relative;min-height:300px}
+#graphSvg{width:100%;height:100%;display:block}
+#graphSvg line{stroke:var(--line);stroke-width:1.6}
+#graphSvg .node circle{stroke-width:2.5;cursor:grab}
+#graphSvg .node text{font-family:'Space Grotesk';font-size:11px;font-weight:600;fill:var(--ink);pointer-events:none}
+#graphEmpty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--ink-soft);font-size:13px;text-align:center;padding:20px}
+
+/* ---------- Stats ---------- */
+.statGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:13px}
+.stat .n{font-size:24px;font-weight:700;letter-spacing:-.02em}
+.stat .l{font-size:11px;color:var(--ink-soft);margin-top:2px}
+
+/* ---------- Modal / toast ---------- */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);font-size:12.5px;font-weight:600;padding:9px 16px;border-radius:99px;z-index:100;opacity:0;transition:opacity .25s;pointer-events:none}
+#toast.show{opacity:1}
+[data-theme="dark"] #toast{background:#2A3442;color:#EDEFF2}
+/* About overlay */
+#aboutOverlay{position:fixed;inset:0;z-index:120;background:rgba(20,26,34,.55);backdrop-filter:blur(3px);display:none;align-items:flex-start;justify-content:center;padding:34px 16px;overflow-y:auto}
+#aboutOverlay.open{display:flex}
+#aboutCard{position:relative;width:100%;max-width:560px;background:var(--page);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:26px 26px 24px;margin:auto}
+#aboutClose{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:8px;font-size:15px;color:var(--ink-soft);border:1px solid var(--line)}
+#aboutClose:hover{background:var(--blue-soft);color:var(--ink)}
+.aboutHead{margin-bottom:16px;padding-right:36px}
+.aboutLede{font-family:'Newsreader',Georgia,serif;font-size:17px;line-height:1.55;color:var(--ink);margin-bottom:20px}
+.aboutH{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-soft);margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.aboutSteps{list-style:none;counter-reset:st}
+.aboutSteps li{counter-increment:st;position:relative;padding-left:38px;margin-bottom:13px;font-size:13.5px;line-height:1.55;color:var(--ink-soft)}
+.aboutSteps li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;background:var(--hl);color:#22303F;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+.aboutSteps b,.aboutNotes b,.aboutGrid b{color:var(--ink)}
+.aboutGrid{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.aboutGrid li{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:11px 13px;display:flex;flex-direction:column;gap:3px}
+.aboutGrid b{font-size:13.5px}
+.aboutGrid span{font-size:12px;color:var(--ink-soft);line-height:1.45}
+.aboutNotes{list-style:none;display:flex;flex-direction:column;gap:9px}
+.aboutNotes li{position:relative;padding-left:18px;font-size:13px;line-height:1.5;color:var(--ink-soft)}
+.aboutNotes li::before{content:"";position:absolute;left:2px;top:8px;width:6px;height:6px;border-radius:50%;background:var(--blue)}
+.aboutDisclaimer{margin-top:22px;background:var(--amber-soft);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:8px;padding:13px 15px;font-size:12px;line-height:1.55;color:var(--ink)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.smallnote{font-size:11px;color:var(--ink-soft);margin-top:8px;line-height:1.45}
+
+@media(max-width:860px){
+  #app{flex-direction:column}
+  #panel{width:100%;min-width:0;height:48%;border-left:none;border-top:1px solid var(--line)}
+  #readerInner{padding:22px 16px 40px}
+  #library{padding:28px 18px 40px}
+  #library h1{font-size:26px}
+  #bookTitleBar{display:none}
+  #aboutCard{padding:22px 18px 20px;border-radius:14px}
+  #aboutOverlay{padding:16px 10px}
+  .aboutGrid{grid-template-columns:1fr}
+  .aboutLede{font-size:15.5px}
+}
+@media(max-width:560px){
+  /* keep the top bar usable on phones: hide the least-essential controls */
+  #topbar{gap:8px;padding:0 10px}
+  #langSel{max-width:96px}
+  #fsMinus,#fsPlus{display:none}
+  .logo{font-size:15px}
+  #readerBar{gap:6px;padding:7px 10px}
+  #quizPageBtn{font-size:11px;padding:5px 9px}
+}
+
+/* ---------- v2 shell: brand, demo library, progress sub-nav ---------- */
+.brand{display:flex;align-items:center;gap:9px;background:none;border:none;padding:0;cursor:pointer}
+.brandMark{display:inline-flex;flex-shrink:0}
+.hbtn{width:auto;padding:0 11px;gap:6px}
+.hbtn .hlbl{font-size:12.5px;font-weight:600}
+.pill.demo{border-color:var(--amber);color:var(--amber)}
+.pill.demo .dot{background:var(--amber)}
+.dzIcon{width:52px;height:52px;border:2px dashed var(--line);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:var(--blue);font-size:20px;font-weight:700}
+.dzBtns{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:4px}
+.bIco{font-size:14px}
+.caret{font-size:10px;margin-left:2px;opacity:.85}
+.ddWrap{position:relative}
+.dzHint{font-size:12px;color:var(--ink-soft);margin-top:16px;display:flex;gap:6px;justify-content:center;align-items:center}
+#demoMenu{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);width:320px;max-width:86vw;background:var(--page);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 50px rgba(20,26,34,.22);padding:10px;display:none;z-index:60;text-align:left;max-height:60vh;overflow-y:auto}
+#demoMenu.open{display:block}
+.demoCat{margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.demoCat:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.demoCat h5{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);margin:6px 6px 5px;display:flex;align-items:center;gap:7px}
+.demoCat h5 .fv{font-weight:700;font-size:8.5px;letter-spacing:.05em;border:1px solid var(--amber);color:var(--amber);border-radius:99px;padding:1px 6px}
+.demoCat.future h5{color:var(--amber)}
+.demoTopic{display:block;width:100%;text-align:left;padding:8px 11px;border-radius:8px;font-size:13px;font-weight:500;color:var(--ink)}
+.demoTopic:hover{background:var(--blue-soft)}
+.tIco{margin-right:6px;font-size:12px}
+#progressSub{display:flex;gap:6px;padding:11px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap;flex-shrink:0}
+#progressSub button{font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:99px;border:1px solid var(--line);color:var(--ink-soft);background:var(--paper)}
+#progressSub button.active{background:var(--hl);color:#22303F;border-color:transparent}
+.subView{display:none;flex:1;min-height:0;overflow-y:auto}
+.subView.active{display:flex;flex-direction:column}
+#sv-map{overflow:hidden}
+#sv-map #graphBox{flex:1}
+.shelfEmpty{display:flex;align-items:center;gap:11px;border:1px dashed var(--line);border-radius:var(--radius);padding:14px 15px;color:var(--ink-soft);font-size:12.5px}
+@media(max-width:620px){
+  .hbtn .hlbl{display:none}
+  .hbtn{padding:0;width:34px}
+}
+
+/* ---------- v3 brand + upload icon ---------- */
+.logo{position:relative;display:inline-flex;align-items:baseline;gap:0;white-space:nowrap;font-weight:700;font-size:17px;letter-spacing:-.02em}
+.brandName{color:var(--ink)}
+.brandAI{color:var(--amber)}
+.brandSwoosh{position:absolute;left:0;right:0;bottom:-5px;width:100%;height:6px;pointer-events:none}
+.upIco{width:15px;height:15px;vertical-align:-3px}
+.dzIcon .upIco{width:24px;height:24px}
+
+/* ---------- v4: figures, featured demo, clear recent ---------- */
+.rfig{margin:0 0 22px;text-align:center}
+.rfig img{max-width:100%;max-height:340px;border-radius:12px;box-shadow:var(--shadow);display:block;margin:0 auto}
+.rfig figcaption{font-size:11.5px;color:var(--ink-soft);margin-top:7px;font-style:italic}
+.rfig.rfig-fail{display:none}
+.demoFeat{background:var(--blue-soft);font-weight:700;border:1px solid var(--line);margin-bottom:8px}
+.playLink{margin-top:12px;font-size:13px;font-weight:600;color:var(--blue);background:none;border:none;cursor:pointer}
+.playLink:hover{text-decoration:underline}
+.shelfHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.shelfHead h3{margin-bottom:0}
+.shelfClear{font-size:12px;font-weight:600;color:var(--ink-soft)}
+.shelfClear:hover{color:var(--rust)}
+.logo{font-family:'Baloo 2','Space Grotesk',sans-serif;font-weight:800;font-size:22px}
+.brand .brandMark{align-self:center}
+
+/* ---------- Adaptive Learning Path ---------- */
+.subNew{font-size:8px;font-weight:800;letter-spacing:.05em;background:var(--amber);color:#3a2c05;border-radius:99px;padding:1px 5px;vertical-align:2px;margin-left:3px}
+.aHead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:2px 2px 12px}
+.aHowBtn{font-size:11px;font-weight:600;color:var(--blue);border:1px solid var(--line);border-radius:99px;padding:4px 9px;white-space:nowrap;background:var(--paper)}
+.aHow .aHowList{margin:0;padding-left:18px;font-size:12.5px;color:var(--ink-soft);line-height:1.6}
+.aH5{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);margin:0 0 9px}
+.aKick{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--blue);margin-bottom:12px}
+.aKick .aDot{width:8px;height:8px;border-radius:50%;background:var(--amber)}
+.aNext{box-shadow:var(--shadow)}
+.aNextRow{display:flex;gap:14px;align-items:flex-start}
+.aRing text{font-family:'Space Grotesk',sans-serif}
+.aConcept{font-family:'Newsreader',Georgia,serif;font-size:19px;font-weight:600;line-height:1.2;color:var(--ink)}
+.aBadge{display:inline-block;font-size:10.5px;font-weight:700;border-radius:99px;padding:2px 9px;margin-top:6px;border:1px solid var(--line)}
+.aBadge.g{background:var(--green-soft);color:var(--green);border-color:var(--green)} .aBadge.a{background:var(--amber-soft);color:var(--amber);border-color:var(--amber)} .aBadge.r{background:var(--rust-soft);color:var(--rust);border-color:var(--rust)}
+.aMeta{font-size:12px;color:var(--ink-soft);margin-top:9px}
+.aStart{width:100%;justify-content:center;margin-top:14px}
+.aSignals{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.aSignals li{position:relative;padding-left:18px;font-size:13px;color:var(--ink)}
+.aSignals li::before{content:"";position:absolute;left:3px;top:7px;width:6px;height:6px;border-radius:50%;background:var(--blue)}
+.aHelp{margin-top:11px;font-size:12.5px;color:var(--ink-soft);line-height:1.5;background:var(--blue-soft);border-radius:8px;padding:9px 11px}
+.aPath{display:flex;flex-direction:column;gap:8px}
+.aStep{display:flex;align-items:center;gap:11px;text-align:left;width:100%;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;transition:border-color .12s,transform .1s}
+.aStep:hover{border-color:var(--blue)} .aStep:active{transform:scale(.99)}
+.aStepNum{width:22px;height:22px;flex-shrink:0;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+[data-theme="dark"] .aStepNum{color:#0F1319}
+.aStepBody{flex:1;min-width:0;display:flex;flex-direction:column} .aStepTitle{font-size:13px;font-weight:600;color:var(--ink)} .aStepDesc{font-size:11.5px;color:var(--ink-soft);margin-top:1px}
+.aStepMeta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0}
+.aStepPct{font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px} .aStepPct.g{background:var(--green-soft);color:var(--green)} .aStepPct.a{background:var(--amber-soft);color:var(--amber)} .aStepPct.r{background:var(--rust-soft);color:var(--rust)}
+.aStepMin{font-size:10.5px;color:var(--ink-soft)}
+.aImprove{background:var(--green-soft);border-color:var(--green)}
+.aFlow{display:flex;align-items:flex-start;gap:6px}
+.aFlowItem{flex:1;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.aFlowItem b{font-size:12px;color:var(--ink);line-height:1.2} .aFlowItem span{font-size:10px;color:var(--ink-soft)}
+.aFlowDot{width:26px;height:26px;border-radius:50%;border:2px solid;margin-bottom:2px}
+.aArrow{color:var(--ink-soft);align-self:center;font-size:13px}
+.aBarWrap{display:flex;justify-content:space-between;margin-bottom:6px}
+.aStatRow{display:flex;justify-content:space-between;margin-top:12px}
+.aStatRow>div{display:flex;flex-direction:column;align-items:center;flex:1} .aStatN{font-size:20px;font-weight:700;letter-spacing:-.02em} .aStatL{font-size:10.5px;color:var(--ink-soft);margin-top:1px}
+.aAdapt{display:flex;flex-direction:column;gap:9px} .aAdaptStep{position:relative;padding-left:16px;font-size:12.5px;line-height:1.35} .aAdaptStep::before{content:"";position:absolute;left:3px;top:6px;width:6px;height:6px;border-radius:50%;background:var(--amber)} .aAdaptStep b{color:var(--ink)} .aAdaptStep span{color:var(--ink-soft);display:block;font-size:11.5px}
+</style>
+</head>
+<body data-theme="light">
+
+<div id="topbar">
+  <button class="brand" id="homeBrand" title="Home">
+    <span class="brandMark" aria-hidden="true"><svg width="44" height="44" viewBox="0 0 120 120" fill="none">
+      <path d="M14 99 C40 91, 80 91, 106 99" fill="none" stroke="#F2A900" stroke-width="6.5" stroke-linecap="round"/>
+      <path d="M58 47 C45 40, 27 39, 15 45 L15 87 C27 82, 45 84, 58 92 Z" fill="#14306B"/>
+      <path d="M62 47 C75 40, 93 39, 105 45 L105 87 C93 82, 75 84, 62 92 Z" fill="#14306B"/>
+      <path d="M19 47 C30 44, 44 45, 56 51" stroke="#F2A900" stroke-width="1.6" fill="none" opacity=".55"/>
+      <path d="M101 47 C90 44, 76 45, 64 51" stroke="#F2A900" stroke-width="1.6" fill="none" opacity=".55"/>
+      <g stroke="#FDFBF5" stroke-width="2.3" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M70 64 h9 v9 h10"/><path d="M74 84 v-6 h12"/><path d="M90 60 v9 h7"/></g>
+      <circle cx="70" cy="64" r="3" fill="#14306B" stroke="#FDFBF5" stroke-width="2.3"/><circle cx="89" cy="73" r="3.2" fill="#F2A900"/><circle cx="74" cy="84" r="3" fill="#FDFBF5"/><circle cx="97" cy="69" r="2.6" fill="#F2A900"/>
+      <g fill="#F2A900"><rect x="92" y="40" width="8" height="8" rx="1.5"/><rect x="102" y="33" width="6" height="6" rx="1.3"/><rect x="110" y="28" width="4.2" height="4.2" rx="1"/></g>
+      <rect x="100" y="45" width="5" height="5" rx="1.1" fill="#14306B"/>
+      <path d="M63 8 L67 22 L81 26 L67 30 L63 44 L59 30 L45 26 L59 22 Z" fill="#F2A900"/>
+      <g stroke="#F2A900" stroke-width="2" stroke-linecap="round"><path d="M48 12 l3 3"/><path d="M78 12 l-3 3"/><path d="M43 26 h-4"/><path d="M87 26 h4"/></g>
+    </svg></span>
+    <span class="logo"><span class="brandName">DigiBook</span><span class="brandAI">&nbsp;AI</span><svg class="brandSwoosh" viewBox="0 0 120 8" preserveAspectRatio="none" aria-hidden="true"><path d="M2 5.4C32 1.2 90 1.2 118 4.2" stroke="#E0A82E" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg></span>
+  </button>
+  <div id="bookTitleBar"></div>
+  <span id="demoPill" class="pill demo" style="display:none" title="Preloaded sample document"><span class="dot"></span><span id="demoPillTxt">AI Tutor: Demo</span></span>
+  <span id="aiPill" class="pill offline" title="AI connection status"><span class="dot"></span><span id="aiPillTxt">AI: checking…</span></span>
+  <select class="ctl" id="langSel" title="Explanation language">
+    <option value="English">English</option><option value="Hindi">Hindi</option><option value="Spanish">Spanish</option>
+    <option value="French">French</option><option value="Chinese">Chinese</option><option value="Arabic">Arabic</option>
+    <option value="German">German</option><option value="Korean">Korean</option><option value="Japanese">Japanese</option>
+  </select>
+  <button class="iconbtn" id="fsMinus" title="Smaller text">A−</button>
+  <button class="iconbtn" id="fsPlus" title="Larger text">A+</button>
+  <button class="iconbtn" id="themeBtn" title="Toggle dark mode">◐</button>
+  <button class="iconbtn hbtn" id="homeBtn" title="Home"><span aria-hidden="true">⌂</span><span class="hlbl">Home</span></button>
+</div>
+
+<div id="app">
+  <div id="readerCol">
+    <!-- Library -->
+    <div id="library">
+      <div class="hero">
+        <div class="eyebrow">An Adaptive AI Textbook &amp; Learning Platform</div>
+        <h1>The textbook that <span class="swipe">understands</span> how you learn.</h1>
+        <p class="sub">Upload a chapter, article, or study document, or open a ready-made lesson. Select anything you don't understand and DigiBook AI explains it, translates it, tutors you Socratically, quizzes you, and tracks what you've truly mastered.</p>
+        <button class="linkbtn" id="aboutLink">How does it work? →</button>
+      </div>
+      <div id="dropzone">
+        <div class="dzIcon" aria-hidden="true"><svg class="upIco" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 3v5h5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 18v-6M9.4 14.2 12 11.6l2.6 2.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="big">Drop a file here to start reading</div>
+        <div class="small">PDF, DOCX, or TXT · processed in your browser · nothing is uploaded to a server except the passages you ask the AI about</div>
+        <div class="dzBtns">
+          <button class="btn" id="pickBtn"><svg class="upIco" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 3v5h5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 18v-6M9.4 14.2 12 11.6l2.6 2.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Choose a file</button>
+          <div class="ddWrap">
+            <button class="btn ghost" id="demoBtn"><span class="bIco" aria-hidden="true">📚</span> Explore Demo Library <span class="caret" aria-hidden="true">▾</span></button>
+            <div id="demoMenu"></div>
+          </div>
+        </div>
+        <div class="dzHint"><span aria-hidden="true">🔒</span> Start with a demo lesson, or upload your own document.</div>
+        <button class="playLink" id="playDemo"><span aria-hidden="true">▶</span> Play the featured demo</button>
+        <input type="file" id="fileInput" accept=".pdf,.docx,.txt" hidden>
+      </div>
+      <div id="shelf"></div>
+    </div>
+
+    <!-- Reader -->
+    <div id="reader" style="display:none;flex:1;flex-direction:column;min-height:0">
+      <div id="readerBar">
+        <button class="iconbtn" id="prevBtn" title="Previous page">‹</button>
+        <button class="iconbtn" id="nextBtn" title="Next page">›</button>
+        <button class="iconbtn" id="bmBtn" title="Bookmark this page">🔖</button>
+        <button class="iconbtn" id="hlModeBtn" title="Highlighter: click a paragraph to highlight">🖍️</button>
+        <span id="pgInfo"></span>
+        <div class="grow"></div>
+        <button class="btn ghost" id="quizPageBtn" style="padding:6px 12px;font-size:12px">Quiz me on this</button>
+        <button class="iconbtn hbtn" id="exitReadBtn" title="Exit to Home" style="margin-left:8px"><span aria-hidden="true">✕</span><span class="hlbl">Exit</span></button>
+      </div>
+      <div id="readerScroll">
+        <div id="progressRail"><div id="progressFill"></div></div>
+        <div id="readerInner">
+          <div id="textPage" style="display:none"></div>
+          <div id="pdfWrap" style="display:none"></div>
+          <div id="emptyReader" style="display:none">Nothing loaded yet.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div id="panel">
+    <div id="panelTabs">
+      <button data-tab="learn" class="active"><span class="tIco" aria-hidden="true">📖</span>Learn</button>
+      <button data-tab="quiz"><span class="tIco" aria-hidden="true">❓</span>Quiz</button>
+      <button data-tab="progress"><span class="tIco" aria-hidden="true">📊</span>Progress</button>
+      <button data-tab="about"><span class="tIco" aria-hidden="true">ⓘ</span>About</button>
+    </div>
+
+    <div class="panelView active" id="pv-learn">
+      <div id="chatLog"></div>
+      <div id="chatBox">
+        <div id="chatModeRow">
+          <span>Tutor style:</span>
+          <div class="toggle">
+            <button id="modeSocratic" class="on" title="The tutor guides you with questions">Guide me</button>
+            <button id="modeDirect" title="The tutor answers directly">Just answer</button>
+          </div>
+        </div>
+        <div id="chatInputRow">
+          <textarea id="chatInput" rows="1" placeholder="Ask about what you're reading…"></textarea>
+          <button class="btn" id="chatSend">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panelView" id="pv-quiz"><div class="pv-pad" id="quizPad"></div></div>
+
+    <div class="panelView" id="pv-progress">
+      <div id="progressSub">
+        <button data-sub="mastery" class="active">Mastery</button>
+        <button data-sub="map">Concept Map</button>
+        <button data-sub="cards">Cards</button>
+        <button data-sub="stats">Stats</button>
+        <button data-sub="adaptive">Adaptive Path <span class="subNew">NEW</span></button>
+      </div>
+      <div class="subView active" id="sv-mastery"><div class="pv-pad" id="modelPad"></div></div>
+      <div class="subView" id="sv-cards"><div class="pv-pad" id="cardsPad"></div></div>
+      <div class="subView" id="sv-stats"><div class="pv-pad" id="statsPad"></div></div>
+      <div class="subView" id="sv-adaptive"><div class="pv-pad" id="adaptivePad"></div></div>
+      <div class="subView" id="sv-map">
+        <div class="pv-pad" style="padding-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn ghost" id="buildGraphBtn" style="padding:6px 12px;font-size:12px">Map this chapter's concepts</button>
+          <span class="hint" id="graphHint"></span>
+        </div>
+        <div id="graphBox">
+          <svg id="graphSvg"></svg>
+          <div id="graphEmpty">No concept map yet.<br>Open a lesson and press “Map this chapter's concepts.”</div>
+        </div>
+        <div class="legend" style="padding:0 16px 14px">
+          <span><i style="background:var(--green)"></i>Strong (≥75%)</span>
+          <span><i style="background:var(--amber)"></i>Developing (50–74%)</span>
+          <span><i style="background:var(--rust)"></i>Needs review (&lt;50%)</span>
+          <span><i style="background:var(--ink-soft)"></i>Not assessed</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panelView" id="pv-about"><div class="pv-pad" id="aboutPad"></div></div>
+  </div>
+</div>
+
+<!-- How it works modal -->
+<div id="aboutOverlay" aria-hidden="true">
+  <div id="aboutCard" role="dialog" aria-modal="true" aria-label="How DigiBook AI works">
+    <button id="aboutClose" title="Close">✕</button>
+    <div class="aboutHead">
+      <span class="logo" style="font-size:21px"><span class="brandName">DigiBook</span><span class="brandAI">&nbsp;AI</span></span>
+      <div class="eyebrow" style="margin-top:8px">An Adaptive AI Textbook &amp; Learning Platform</div>
+    </div>
+    <div id="aboutModalPad"></div>
+    <button class="btn" id="aboutStart" style="width:100%;justify-content:center;margin-top:10px">Start exploring</button>
+  </div>
+</div>
+
+<div id="selPop"></div>
+<div id="toast"></div>
+
+<script>
+// Guard external libs: if a CDN fails to load, the app must still run (sample text, AI, quizzes).
+var PDF_OK = (typeof pdfjsLib !== 'undefined');
+var DOCX_OK = (typeof mammoth !== 'undefined');
+if(PDF_OK){ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
+else { console.warn('pdf.js failed to load — PDF reading disabled, rest of app works.'); }
+if(!DOCX_OK){ console.warn('mammoth failed to load — DOCX reading disabled.'); }
+
+/* ============ State ============ */
+const S = {
+  book:null,           // {id,title,type,pages:[{text}] } for text, or {type:'pdf',pdf,numPages}
+  page:0,
+  pageText:'',         // plain text of current page (for AI context)
+  concepts:{},         // name -> {score, seen}
+  graph:null,          // {nodes,edges}
+  chat:[],             // {role,content}
+  socratic:true,
+  quiz:null,
+  cards:[], cardIdx:0,
+  stats:{pagesRead:0, wordsTapped:0, parasExplained:0, quizzesTaken:0, quizCorrect:0, quizTotal:0, secReading:0},
+  bookmarks:{}, highlights:{},
+  adaptive:{signals:{},improvements:[],completed:[]},
+  aiOK:false,
+};
+const LS='digibook_v1';
+function save(){
+  const d={concepts:S.concepts,stats:S.stats,graph:S.graph,cards:S.cards,
+    adaptive:S.adaptive,
+    shelf:JSON.parse(localStorage.getItem(LS+'_shelf')||'[]')};
+  try{localStorage.setItem(LS,JSON.stringify(d))}catch(e){}
+}
+function load(){
+  try{const d=JSON.parse(localStorage.getItem(LS)||'{}');
+    Object.assign(S.concepts,d.concepts||{});
+    Object.assign(S.stats,d.stats||S.stats);
+    if(d.graph)S.graph=d.graph; if(d.cards)S.cards=d.cards;
+    if(d.adaptive){ S.adaptive.signals=d.adaptive.signals||{}; S.adaptive.improvements=d.adaptive.improvements||[]; S.adaptive.completed=d.adaptive.completed||[]; }
+  }catch(e){}
+}
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200)}
+
+/* ============ AI layer (Gemini via Netlify proxy, graceful fallback) ============ */
+async function callAI(system, user, json=false){
+  try{
+    const r=await fetch('/.netlify/functions/ai-proxy',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({system,user,json})
+    });
+    if(!r.ok) throw new Error('proxy '+r.status);
+    const d=await r.json();
+    const txt=d.text||'';
+    if(!txt) throw new Error('empty');
+    setAI(true);
+    return txt;
+  }catch(e){
+    setAI(false);
+    return null; // caller handles offline
+  }
+}
+function setAI(ok){
+  S.aiOK=ok;const p=$('#aiPill'),t=$('#aiPillTxt');
+  p.className='pill '+(ok?'live':'offline');
+  t.textContent=ok?'AI Tutor: Live':'AI Tutor: Offline';
+}
+function stripFence(t){return (t||'').replace(/```json/gi,'').replace(/```/g,'').trim()}
+async function callAIJSON(system,user){
+  const raw=await callAI(system,user,true); if(!raw)return null;
+  try{return JSON.parse(stripFence(raw))}catch(e){
+    const m=stripFence(raw).match(/[\[{][\s\S]*[\]}]/); if(m){try{return JSON.parse(m[0])}catch(_){}}
+    return null;
+  }
+}
+
+/* ============ File loading ============ */
+/* ============ Demo Library (curated multi-subject samples) ============
+   Each topic ships real 2-page content plus a curated concept map and a
+   starting mastery snapshot, so Learn / Quiz / Cards / Progress / Graph are
+   populated the moment a topic is opened. Quizzes and cards still generate
+   live from the text (AI when connected, honest offline fallback otherwise). */
+const DEMO_LIB=[
+ {subject:'Biology',icon:'🌿',topics:[
+  {id:'photosynthesis',title:'Photosynthesis',
+   pages:[
+`## How Plants Capture Light
+Photosynthesis is the process green plants, algae, and some bacteria use to turn light energy into chemical energy they can store and use. It takes place mainly in the leaves, inside tiny structures called chloroplasts. Chloroplasts contain a green pigment named chlorophyll, and it is chlorophyll that absorbs light, mostly in the red and blue parts of the spectrum, while reflecting green, which is why leaves look green.
+
+The overall reaction combines carbon dioxide from the air with water from the soil, using light energy, to produce glucose and oxygen. In words: carbon dioxide plus water, in the presence of light, yields glucose plus oxygen. The glucose stores energy in its chemical bonds, and the oxygen is released into the air as a by-product that most living things depend on to breathe.`,
+`## Two Stages of the Process
+Photosynthesis happens in two connected stages. The first is the light-dependent reactions, which occur in the thylakoid membranes of the chloroplast. Here light energy splits water molecules, releasing oxygen and producing energy carriers called ATP and NADPH. These carriers hold energy in a form the cell can use in the next stage.
+
+The second stage is the Calvin cycle, sometimes called the light-independent reactions, which takes place in the stroma of the chloroplast. Using the ATP and NADPH from the first stage, the Calvin cycle fixes carbon dioxide into glucose. Because the cycle depends on the products of the light reactions, the whole process ultimately still depends on light. Together the two stages let a plant build sugar from air, water, and sunlight.`],
+   graph:{nodes:['Photosynthesis','Chlorophyll','Chloroplast','Light Reactions','Calvin Cycle','Glucose','Oxygen'],
+     edges:[['Photosynthesis','Chloroplast'],['Chloroplast','Chlorophyll'],['Photosynthesis','Light Reactions'],['Photosynthesis','Calvin Cycle'],['Light Reactions','Calvin Cycle'],['Calvin Cycle','Glucose'],['Light Reactions','Oxygen']]},
+   mastery:{Photosynthesis:78,Chlorophyll:64,Chloroplast:70,'Light Reactions':52,'Calvin Cycle':40,Glucose:66,Oxygen:80}},
+  {id:'genetics',title:'Genetics',
+   pages:[
+`## The Molecule of Inheritance
+Every living thing carries a set of instructions written in a molecule called DNA. DNA, or deoxyribonucleic acid, is a long chain built from four chemical letters: adenine, thymine, guanine, and cytosine. The precise order of these letters spells out the genetic code, and that code determines the traits an organism inherits from its parents.
+
+A gene is a specific stretch of DNA that codes for a particular product, usually a protein. Proteins do the work of the cell, building structures, carrying signals, and speeding up chemical reactions. Because genes tell the cell which proteins to make, they ultimately shape everything from eye color to the way an enzyme folds.
+
+Humans carry roughly twenty thousand genes, packaged into structures called chromosomes. We inherit one copy of each chromosome from each parent, which means we carry two copies of most genes.`,
+`## Alleles, Dominant and Recessive
+Although every human has the same basic set of genes, the exact sequence of a gene can differ from person to person. These alternative versions of a gene are called alleles. Because we inherit two copies of each gene, we carry two alleles for most traits, one from each parent. When the two alleles are identical the individual is homozygous, and when they differ the individual is heterozygous.
+
+The combination of alleles an organism carries is its genotype, while the observable trait that results is its phenotype. When two different alleles are present, one often masks the other. The allele that is expressed is called dominant and the hidden one is recessive. This is why a trait can seem to skip a generation: two parents can each carry a hidden recessive allele and pass both to a child, letting the masked trait finally appear.`],
+   graph:{nodes:['Genetics','DNA','Gene','Chromosome','Allele','Genotype','Phenotype','Dominant','Recessive'],
+     edges:[['Genetics','DNA'],['DNA','Gene'],['Gene','Chromosome'],['Gene','Allele'],['Allele','Genotype'],['Genotype','Phenotype'],['Allele','Dominant'],['Allele','Recessive']]},
+   mastery:{Genetics:82,DNA:85,Gene:74,Chromosome:55,Allele:70,Genotype:60,Phenotype:58,Dominant:62,Recessive:45}},
+  {id:'cell-structure',title:'Cell Structure',
+   pages:[
+`## The Basic Unit of Life
+The cell is the smallest unit that can be called living. Every organism, from a single bacterium to a blue whale, is built from cells. Cells come in two broad types. Prokaryotic cells, such as bacteria, are small and have no nucleus, keeping their DNA loose in the cell. Eukaryotic cells, which make up plants, animals, and fungi, are larger and keep their DNA inside a membrane-bound nucleus.
+
+Surrounding every cell is a thin cell membrane that controls what enters and leaves. Inside, a jelly-like fluid called cytoplasm holds the cell's contents. Floating in the cytoplasm are specialized structures called organelles, each with its own job, much like the organs of a body.`,
+`## Organelles and Their Jobs
+The nucleus acts as the control center, storing DNA and directing the cell's activities. Mitochondria are the powerhouses, releasing energy from food through respiration. Ribosomes build proteins by following instructions copied from DNA. The endoplasmic reticulum and Golgi apparatus package and transport those proteins where they are needed.
+
+Plant cells share these parts but add a few of their own. A rigid cell wall surrounds the membrane and gives the cell shape and support. Chloroplasts carry out photosynthesis, capturing light to make sugar. A large central vacuole stores water and helps the plant stay firm. Comparing plant and animal cells shows how the same basic design is adapted for very different ways of living.`],
+   graph:{nodes:['Cell','Nucleus','Membrane','Cytoplasm','Mitochondria','Ribosome','Cell Wall','Chloroplast','Vacuole'],
+     edges:[['Cell','Membrane'],['Cell','Cytoplasm'],['Cell','Nucleus'],['Cytoplasm','Mitochondria'],['Cytoplasm','Ribosome'],['Cell','Cell Wall'],['Cell','Chloroplast'],['Cell','Vacuole']]},
+   mastery:{Cell:80,Nucleus:72,Membrane:66,Cytoplasm:60,Mitochondria:74,Ribosome:50,'Cell Wall':58,Chloroplast:54,Vacuole:48}},
+ ]},
+ {subject:'Physics',icon:'🧭',topics:[
+  {id:'motion-forces',title:'Motion and Forces',
+   pages:[
+`## Describing Motion
+Motion is a change in position over time. To describe it clearly, physicists separate a few related ideas. Speed is how fast an object moves, measured as distance divided by time. Velocity adds direction to speed, so it tells you not just how fast but which way. Acceleration is the rate at which velocity changes, whether the object is speeding up, slowing down, or turning.
+
+Because velocity includes direction, an object moving at a steady speed around a circle is still accelerating, since its direction keeps changing. Graphs help make these ideas concrete: a distance-time graph shows how far an object has traveled, and its slope at any moment gives the speed.`,
+`## Newton's Three Laws
+Isaac Newton summarized how forces change motion in three laws. The first law, inertia, states that an object stays at rest or moves at constant velocity unless a net force acts on it. This is why a book on a table stays put until something pushes it.
+
+The second law connects force, mass, and acceleration: the net force on an object equals its mass times its acceleration, written F equals m times a. A larger force produces more acceleration, while more mass resists acceleration. The third law states that for every action there is an equal and opposite reaction, so when you push on a wall, the wall pushes back on you with the same force. Together these laws explain everything from a rolling ball to a launching rocket.`],
+   graph:{nodes:['Motion','Speed','Velocity','Acceleration','Force','Inertia','Mass','Newton’s Laws'],
+     edges:[['Motion','Speed'],['Speed','Velocity'],['Velocity','Acceleration'],['Motion','Force'],['Force','Newton’s Laws'],['Newton’s Laws','Inertia'],['Force','Mass'],['Mass','Acceleration']]},
+   mastery:{Motion:76,Speed:80,Velocity:64,Acceleration:52,Force:60,Inertia:48,Mass:70,'Newton’s Laws':44}},
+  {id:'energy',title:'Energy',
+   pages:[
+`## Forms of Energy
+Energy is the capacity to do work, to make something move or change. It appears in many forms. Kinetic energy is the energy of motion, so a rolling ball or a flowing river carries kinetic energy. Potential energy is stored energy that depends on position, such as a rock held at the top of a hill or a stretched spring. Other forms include thermal energy in hot objects, chemical energy in food and fuel, and electrical energy flowing through wires.
+
+These forms can change from one to another. A falling rock converts potential energy into kinetic energy, and a battery converts chemical energy into electrical energy. Tracking these conversions is one of the most useful tools in physics.`,
+`## Conservation of Energy
+A central principle of physics is that energy is conserved: it cannot be created or destroyed, only transformed from one form to another. When a roller coaster climbs a hill it gains potential energy, and as it races down it trades that potential energy for kinetic energy. If you add up all the forms of energy in a closed system, the total stays the same.
+
+In real machines some energy always spreads out as heat through friction, which is why no machine is perfectly efficient. That heat is not lost from the universe, but it becomes harder to use. Understanding conservation lets engineers design engines, power plants, and even the human body, all of which are really systems for moving energy from one form to a more useful one.`],
+   graph:{nodes:['Energy','Kinetic','Potential','Thermal','Chemical','Conservation','Work','Friction'],
+     edges:[['Energy','Kinetic'],['Energy','Potential'],['Energy','Thermal'],['Energy','Chemical'],['Energy','Conservation'],['Energy','Work'],['Kinetic','Potential'],['Thermal','Friction']]},
+   mastery:{Energy:78,Kinetic:72,Potential:68,Thermal:54,Chemical:58,Conservation:46,Work:62,Friction:50}},
+  {id:'electricity',title:'Electricity',
+   pages:[
+`## Charge, Current, and Voltage
+Electricity comes from the behavior of tiny charged particles, especially electrons. Objects can carry positive or negative charge, and like charges repel while opposite charges attract. When charges flow through a material, that flow is called an electric current, measured in amperes.
+
+To make charge flow you need a push, and that push is called voltage, measured in volts. Voltage is the difference in electrical energy between two points, like the pressure that drives water through a pipe. A battery provides voltage by using chemical reactions to separate charge, creating a high-energy terminal and a low-energy terminal that current can flow between.`,
+`## Circuits and Resistance
+A circuit is a complete loop that lets current flow from a source, through components, and back again. If the loop is broken, for example by an open switch, the current stops. Along the way, materials resist the flow of charge to different degrees, a property called resistance, measured in ohms. Good conductors like copper have low resistance, while insulators like rubber have very high resistance.
+
+These three quantities are tied together by Ohm's law, which states that voltage equals current times resistance, written V equals I times R. If you raise the voltage the current increases, and if you raise the resistance the current falls. Circuits can be wired in series, one after another, or in parallel, side by side, and each arrangement shares voltage and current in a different way.`],
+   graph:{nodes:['Electricity','Charge','Current','Voltage','Resistance','Circuit','Ohm’s Law','Conductor'],
+     edges:[['Electricity','Charge'],['Charge','Current'],['Electricity','Voltage'],['Current','Resistance'],['Electricity','Circuit'],['Current','Ohm’s Law'],['Voltage','Ohm’s Law'],['Resistance','Conductor']]},
+   mastery:{Electricity:74,Charge:70,Current:64,Voltage:60,Resistance:50,Circuit:66,'Ohm’s Law':42,Conductor:56}},
+ ]},
+ {subject:'Math',icon:'📐',topics:[
+  {id:'algebra',title:'Algebra',
+   pages:[
+`## The Language of Symbols
+Algebra is arithmetic with letters. Instead of working only with fixed numbers, we use symbols called variables, often x or y, to stand for unknown or changing values. This lets us write general rules that hold for many numbers at once. An expression like 3x plus 2 describes a calculation without committing to a specific value of x.
+
+An equation states that two expressions are equal, such as 3x plus 2 equals 11. Solving an equation means finding the value of the variable that makes the statement true. The key idea is balance: whatever you do to one side of an equation you must do to the other, so the equality is preserved.`,
+`## Solving and Rearranging
+To solve 3x plus 2 equals 11, you undo the operations step by step. First subtract 2 from both sides to get 3x equals 9, then divide both sides by 3 to find x equals 3. Checking the answer by substituting it back is always a good habit. The same balancing method works for more complex equations.
+
+Algebra also lets you rearrange formulas to isolate whatever quantity you care about. If the area of a rectangle is length times width, you can rearrange to find the width as area divided by length. This ability to manipulate relationships, rather than just compute single answers, is what makes algebra the foundation for almost all higher mathematics and science.`],
+   graph:{nodes:['Algebra','Variable','Expression','Equation','Solving','Balance','Formula'],
+     edges:[['Algebra','Variable'],['Variable','Expression'],['Expression','Equation'],['Equation','Solving'],['Solving','Balance'],['Algebra','Formula'],['Formula','Equation']]},
+   mastery:{Algebra:80,Variable:76,Expression:68,Equation:62,Solving:54,Balance:58,Formula:50}},
+  {id:'functions',title:'Functions',
+   pages:[
+`## What a Function Is
+A function is a rule that takes an input and produces exactly one output. You can picture it as a machine: you feed in a number, the machine applies its rule, and out comes a single result. We often write a function as f of x, where x is the input and f of x is the output. For example, if f of x equals 2x plus 1, then feeding in 3 gives an output of 7.
+
+The set of allowed inputs is called the domain, and the set of possible outputs is called the range. The defining feature of a function is that each input maps to only one output, which is what makes its behavior predictable.`,
+`## Graphs and Families
+Every function can be drawn as a graph, with inputs along the horizontal axis and outputs along the vertical axis. The shape of the graph reveals the function's behavior at a glance. A linear function, like f of x equals 2x plus 1, graphs as a straight line, where the slope tells you how steeply the output rises as the input grows.
+
+Other families of functions have their own signatures. Quadratic functions, which include a squared term, graph as U-shaped curves called parabolas. Exponential functions grow ever faster and model things like population or compound interest. Recognizing these families lets you predict how a quantity will change without plotting every point, which is why functions sit at the heart of modeling the real world.`],
+   graph:{nodes:['Function','Input','Output','Domain','Range','Graph','Linear','Quadratic'],
+     edges:[['Function','Input'],['Function','Output'],['Input','Domain'],['Output','Range'],['Function','Graph'],['Graph','Linear'],['Graph','Quadratic'],['Linear','Output']]},
+   mastery:{Function:78,Input:74,Output:72,Domain:56,Range:52,Graph:64,Linear:60,Quadratic:44}},
+  {id:'probability',title:'Probability',
+   pages:[
+`## Measuring Chance
+Probability is the mathematics of uncertainty. It assigns every possible outcome a number between 0 and 1, where 0 means impossible and 1 means certain. The probability of an event is the number of favorable outcomes divided by the total number of equally likely outcomes. Rolling a fair six-sided die and getting a 4 has a probability of one out of six.
+
+Probabilities of all possible outcomes always add up to 1, because something must happen. This simple rule lets you find the chance of an event not happening by subtracting from 1. If the chance of rain is 0.3, the chance of no rain is 0.7.`,
+`## Combining Events
+Many questions involve more than one event. Two events are independent if one does not affect the other, like separate coin flips. For independent events, the probability that both happen is found by multiplying their individual probabilities, so two heads in a row has a probability of one half times one half, or one quarter.
+
+When events cannot happen at the same time, they are mutually exclusive, and the probability that either one happens is found by adding their probabilities. Over many repeated trials, the observed frequency of an event tends to settle near its theoretical probability, an idea called the law of large numbers. This is why casinos and insurance companies, which deal in huge numbers of trials, can predict long-run results even when any single outcome is uncertain.`],
+   graph:{nodes:['Probability','Outcome','Event','Independent','Mutually Exclusive','Frequency','Certainty'],
+     edges:[['Probability','Outcome'],['Outcome','Event'],['Event','Independent'],['Event','Mutually Exclusive'],['Probability','Frequency'],['Probability','Certainty'],['Frequency','Event']]},
+   mastery:{Probability:76,Outcome:70,Event:66,Independent:50,'Mutually Exclusive':40,Frequency:54,Certainty:60}},
+ ]},
+ {subject:'Computer Science',icon:'💻',topics:[
+  {id:'ml-basics',title:'Machine Learning Basics',
+   pages:[
+`## Learning From Data
+Machine learning is a branch of computer science where programs improve at a task by learning from examples instead of following rules a human wrote by hand. Rather than telling the computer exactly how to recognize a cat, we show it many labeled pictures and let it discover the patterns itself. The result is a model, a mathematical function whose internal settings, called parameters, are tuned during training.
+
+There are three broad styles. In supervised learning the examples come with correct answers, so the model learns to map inputs to known outputs. In unsupervised learning the data has no labels, and the model looks for structure or groupings on its own. In reinforcement learning an agent learns by trial and error, receiving rewards for good actions.`,
+`## Training and Its Pitfalls
+Training a model means adjusting its parameters so its predictions match the examples as closely as possible. The gap between the prediction and the truth is measured by a loss function, and an algorithm called gradient descent nudges the parameters step by step to make that loss smaller. With enough good data and computation, the model gradually improves.
+
+The goal is not to memorize the training examples but to generalize to new, unseen data. A model that fits the training data too closely, capturing noise instead of real patterns, is said to overfit, and it performs poorly in the real world. To guard against this, practitioners hold back a separate test set the model never trains on, and use it to measure how well the model truly learned. Balancing fit and generalization is the central craft of machine learning.`],
+   graph:{nodes:['Machine Learning','Model','Training','Supervised','Unsupervised','Loss','Overfitting','Generalization'],
+     edges:[['Machine Learning','Model'],['Model','Training'],['Machine Learning','Supervised'],['Machine Learning','Unsupervised'],['Training','Loss'],['Training','Overfitting'],['Overfitting','Generalization'],['Model','Generalization']]},
+   mastery:{'Machine Learning':80,Model:72,Training:64,Supervised:68,Unsupervised:50,Loss:46,Overfitting:42,Generalization:54}},
+  {id:'algorithms',title:'Algorithms',
+   pages:[
+`## What an Algorithm Is
+An algorithm is a precise, step-by-step procedure for solving a problem or completing a task. A cooking recipe is a everyday algorithm: a list of steps that, followed in order, produce a reliable result. In computing, algorithms take an input, perform a defined sequence of operations, and produce an output. The same problem can often be solved by many different algorithms, some far more efficient than others.
+
+Two of the most common tasks are searching and sorting. Searching looks for an item in a collection, while sorting arranges items into order. Because these tasks appear everywhere, computer scientists have studied them deeply and designed clever methods that scale to enormous amounts of data.`,
+`## Measuring Efficiency
+To compare algorithms fairly, we ask how the work grows as the input gets larger. This is captured by Big O notation, which describes the running time in terms of the input size n. An algorithm that checks every item once runs in linear time, written O of n. Binary search, which repeatedly halves a sorted list, runs in logarithmic time, O of log n, and is dramatically faster for large lists.
+
+Some algorithms are much slower. A simple sort that compares every pair of items runs in O of n squared, which becomes impractical as data grows, while efficient sorts like merge sort run in O of n log n. Choosing the right algorithm can be the difference between a program that finishes instantly and one that never does, which is why analyzing efficiency is a core skill in computer science.`],
+   graph:{nodes:['Algorithm','Input','Output','Search','Sort','Efficiency','Big O','Binary Search'],
+     edges:[['Algorithm','Input'],['Algorithm','Output'],['Algorithm','Search'],['Algorithm','Sort'],['Algorithm','Efficiency'],['Efficiency','Big O'],['Search','Binary Search'],['Big O','Binary Search']]},
+   mastery:{Algorithm:82,Input:76,Output:74,Search:64,Sort:60,Efficiency:52,'Big O':44,'Binary Search':48}},
+  {id:'data-structures',title:'Data Structures',
+   pages:[
+`## Organizing Information
+A data structure is a way of organizing and storing data so that it can be used efficiently. The right structure depends on what you need to do most often, whether that is adding items, removing them, searching, or keeping them in order. Choosing well can make a program simple and fast, while a poor choice can make the same task slow and awkward.
+
+The simplest structure is the array, a numbered list of items stored side by side, which allows instant access by position. A linked list instead connects items through pointers, making it easy to insert or remove elements without shifting everything, at the cost of slower direct access.`,
+`## Stacks, Queues, and Beyond
+Some structures are defined by the order in which items come out. A stack follows last-in, first-out order, like a pile of plates where you take the top one first, and it is ideal for tasks like undo history. A queue follows first-in, first-out order, like a line at a store, and is used for scheduling and buffering.
+
+More advanced structures capture relationships. A tree arranges data in a branching hierarchy, perfect for representing things like file systems or family trees, and it supports fast search when kept balanced. A hash table stores key-value pairs and can find an item almost instantly by computing where it should live. Understanding these building blocks lets a programmer pick the structure that fits the problem, which is often the key to an elegant solution.`],
+   graph:{nodes:['Data Structure','Array','Linked List','Stack','Queue','Tree','Hash Table','Pointer'],
+     edges:[['Data Structure','Array'],['Data Structure','Linked List'],['Linked List','Pointer'],['Data Structure','Stack'],['Data Structure','Queue'],['Data Structure','Tree'],['Data Structure','Hash Table'],['Stack','Queue']]},
+   mastery:{'Data Structure':80,Array:78,'Linked List':60,Stack:66,Queue:62,Tree:50,'Hash Table':44,Pointer:52}},
+ ]},
+ {subject:'Space Exploration',icon:'🚀',topics:[
+  {id:'mars-rover',title:'How a Mars Rover Explores Space',
+   pages:[
+    {img:'https://commons.wikimedia.org/wiki/Special:FilePath/OSIRIS%20Mars%20true%20color.jpg?width=900',
+     credit:'Mars in true color (ESA / Rosetta / OSIRIS, public domain)',
+     text:`## Robots on Another World
+A Mars rover is a robotic explorer that drives across the surface of Mars in place of a human. Because Mars is millions of miles away and has thin, unbreathable air, sending people is enormously difficult, so scientists send rovers instead. These car-sized robots are built to survive freezing nights, dust storms, and rocky ground while carrying a laboratory's worth of instruments.
+
+Rovers like Curiosity and Perseverance are lowered gently onto the surface and then begin a mission that can last for years. They cannot be steered like a video game, because a radio signal takes several minutes to travel between Earth and Mars. Instead, engineers send a plan for the day, and the rover carries much of it out on its own.`},
+    {text:`## Getting Around and Doing Science
+A rover moves on six sturdy wheels that can climb over rocks and tilt across slopes without tipping. Cameras act as its eyes, giving scientists a detailed view of the landscape and helping the rover avoid hazards on its own using onboard software. This ability to make some decisions without waiting for Earth is called autonomy.
+
+To study the planet, a rover carries scientific instruments. A robotic arm reaches out to drill into rocks and collect samples, while other tools analyze the chemistry of the soil and search for signs that Mars once had water or life. Everything the rover discovers is sent back to Earth as data through giant radio antennas. Piece by piece, these findings help answer one of humanity's biggest questions: was there ever life beyond Earth?`}],
+   graph:{nodes:['Mars Rover','Wheels','Cameras','Autonomy','Robotic Arm','Samples','Instruments','Communication'],
+     edges:[['Mars Rover','Wheels'],['Mars Rover','Cameras'],['Cameras','Autonomy'],['Mars Rover','Robotic Arm'],['Robotic Arm','Samples'],['Mars Rover','Instruments'],['Instruments','Samples'],['Mars Rover','Communication']]},
+   mastery:{'Mars Rover':82,Wheels:70,Cameras:66,Autonomy:48,'Robotic Arm':60,Samples:64,Instruments:56,Communication:52}},
+  {id:'black-holes',title:'Black Holes',
+   pages:[
+    {img:'https://commons.wikimedia.org/wiki/Special:FilePath/Black%20hole%20-%20Messier%2087.jpg?width=900',
+     credit:'The M87 black hole (Event Horizon Telescope Collaboration, CC BY 4.0)',
+     text:`## What Is a Black Hole
+A black hole is a region of space where gravity is so strong that nothing, not even light, can escape it. Black holes form when a very massive star runs out of fuel and collapses under its own weight, crushing an enormous amount of matter into an incredibly small space. The result is an object whose gravity overwhelms everything nearby.
+
+Because no light escapes, a black hole itself is invisible. Astronomers find them by watching how they affect their surroundings, such as stars that orbit an unseen partner or gas that heats up and glows as it falls inward. In 2019 the Event Horizon Telescope captured the first direct image of the glowing gas ringing a black hole.`},
+    {text:`## The Event Horizon and Beyond
+The boundary around a black hole is called the event horizon. It is not a solid surface but a point of no return: anything that crosses it can never come back out. The more massive the black hole, the larger its event horizon. At the very center, matter is thought to be crushed into a point of extreme density called a singularity, where our current understanding of physics breaks down.
+
+As gas and dust spiral toward a black hole, they form a flat, spinning ring called an accretion disk. Friction heats this material to millions of degrees, making it shine brightly across the sky. Black holes also warp the space and time around them, an effect predicted by Einstein's theory of gravity. Studying them pushes science to the edge of what we understand about the universe.`}],
+   graph:{nodes:['Black Hole','Gravity','Event Horizon','Singularity','Light','Accretion Disk','Spacetime'],
+     edges:[['Black Hole','Gravity'],['Black Hole','Event Horizon'],['Event Horizon','Singularity'],['Gravity','Light'],['Black Hole','Accretion Disk'],['Gravity','Spacetime'],['Accretion Disk','Light']]},
+   mastery:{'Black Hole':80,Gravity:74,'Event Horizon':58,Singularity:44,Light:66,'Accretion Disk':50,Spacetime:46}},
+  {id:'moon-trip',title:"NASA's Return to the Moon",
+   pages:[
+    {img:'https://commons.wikimedia.org/wiki/Special:FilePath/NASA-Apollo8-Dec24-Earthrise.jpg?width=900',
+     credit:'Earthrise, seen from lunar orbit (NASA, public domain)',
+     text:`## Returning to the Moon
+More than fifty years after the Apollo astronauts last walked on the Moon, NASA has begun a new era of lunar exploration through the Artemis program. The goal is not just to visit again, but to build a lasting presence: landing astronauts near the Moon's south pole, where frozen water may be hidden in shadowed craters, and eventually using the Moon as a stepping stone toward Mars.
+
+The first mission, Artemis I, sent an uncrewed Orion spacecraft around the Moon and safely back to Earth, testing the giant Space Launch System rocket and the capsule that will one day carry people. Later missions aim to return humans to the lunar surface, including the first woman and first person of color to make the trip.`},
+    {img:'https://commons.wikimedia.org/wiki/Special:FilePath/FullMoon2010.jpg?width=800',
+     credit:'The full Moon (Gregory H. Revera, CC BY-SA 3.0)',
+     text:`## The Journey and Why It Matters
+Traveling to the Moon takes several days. The Orion capsule rides atop the Space Launch System, the most powerful rocket NASA has built, which lifts the spacecraft out of Earth's gravity and sets it on a path toward lunar orbit. From there, a separate landing craft will carry astronauts down to the surface and back up again.
+
+Why go back? The Moon is a natural laboratory for learning to live and work in deep space. The water ice at its poles could one day be turned into drinking water, breathable oxygen, and even rocket fuel, making longer journeys possible. What astronauts and robots learn on the Moon will help prepare humanity for the far greater challenge of sending people to Mars.`}],
+   graph:{nodes:['Artemis','Moon','Orion','Space Launch System','Astronauts','Lunar Orbit','Water Ice','Mars'],
+     edges:[['Artemis','Moon'],['Artemis','Orion'],['Orion','Space Launch System'],['Orion','Astronauts'],['Orion','Lunar Orbit'],['Moon','Water Ice'],['Water Ice','Mars'],['Artemis','Mars']]},
+   mastery:{Artemis:78,Moon:82,Orion:64,'Space Launch System':56,Astronauts:70,'Lunar Orbit':52,'Water Ice':48,Mars:60}},
+ ]},
+ {subject:'Scientific Research',icon:'🔬',topics:[
+  {id:'scientific-method',title:'The Scientific Method',
+   pages:[
+    {text:`## Asking and Testing Questions
+The scientific method is the step-by-step process researchers use to build reliable knowledge about the world. It begins with an observation, something noticed that sparks curiosity, followed by a question about why it happens. From that question a scientist forms a hypothesis: a clear, testable prediction about how things work.
+
+The power of a hypothesis is that it can be proven wrong. Scientists design an experiment to test it, carefully changing one thing at a time while keeping everything else the same. The factor being changed is the variable, and a comparison group that stays unchanged, called the control, shows what would have happened without the change.`},
+    {text:`## From Data to Knowledge
+During an experiment, researchers collect data, the measurements and observations that reveal what actually happened. They analyze this data to see whether it supports the hypothesis or contradicts it. A surprising or failed result is not a mistake; it is often where the most interesting science begins, pointing toward a better question.
+
+A single experiment is never enough. Other scientists must be able to repeat the work and get the same result, a principle called reproducibility. Before findings are widely accepted, they go through peer review, where independent experts check the methods and reasoning. Through many cycles of testing, review, and refinement, tentative ideas gradually become trusted scientific knowledge.`}],
+   graph:{nodes:['Scientific Method','Observation','Hypothesis','Experiment','Variable','Control','Data','Peer Review'],
+     edges:[['Scientific Method','Observation'],['Observation','Hypothesis'],['Hypothesis','Experiment'],['Experiment','Variable'],['Experiment','Control'],['Experiment','Data'],['Data','Peer Review'],['Scientific Method','Peer Review']]},
+   mastery:{'Scientific Method':80,Observation:74,Hypothesis:68,Experiment:62,Variable:54,Control:50,Data:64,'Peer Review':46}},
+  {id:'vaccines',title:'How Vaccines Are Developed',
+   pages:[
+    {text:`## Teaching the Immune System
+A vaccine is a medicine that trains the body to fight a disease before it ever encounters the real thing. The immune system defends us by recognizing foreign invaders, but the first time it meets a new germ, it can be slow to respond. A vaccine solves this by showing the immune system a harmless preview of the germ, called an antigen.
+
+The antigen might be a weakened or inactivated version of the virus, or just a piece of it. The immune system reacts by building defenders called antibodies and by remembering what the invader looks like. If the real germ arrives later, the body recognizes it instantly and fights it off, often before the person feels sick at all.`},
+    {text:`## From Lab to Clinic
+Developing a vaccine is a careful, multi-year process. It starts in the laboratory, where scientists study the germ and design a candidate vaccine, then test it in cells and animals for early signs of safety. Only after these steps can it move into human testing, which happens in three phases of clinical trials.
+
+Each phase tests more people than the last. Early phases check that the vaccine is safe and prompts an immune response, while later phases measure its efficacy, how well it actually prevents disease across thousands of volunteers. Regulators review all of this evidence before approving a vaccine, and monitoring continues even after it reaches the public. This slow, layered process is what makes approved vaccines both safe and effective.`}],
+   graph:{nodes:['Vaccine','Immune System','Antigen','Antibodies','Clinical Trials','Efficacy','Safety','Regulators'],
+     edges:[['Vaccine','Immune System'],['Vaccine','Antigen'],['Immune System','Antibodies'],['Antigen','Antibodies'],['Vaccine','Clinical Trials'],['Clinical Trials','Efficacy'],['Clinical Trials','Safety'],['Efficacy','Regulators']]},
+   mastery:{Vaccine:82,'Immune System':76,Antigen:62,Antibodies:66,'Clinical Trials':54,Efficacy:50,Safety:58,Regulators:44}},
+ ]},
+ {subject:'Practical Skills',icon:'⚒',future:true,topics:[
+  {id:'carpentry-safety',title:'Basic Carpentry Safety',
+   pages:[
+`## Working Safely With Tools
+Carpentry brings real satisfaction, but it also involves sharp blades, fast-moving machinery, and heavy materials, so safety comes first. The foundation of safe work is personal protective equipment. Safety glasses protect your eyes from flying chips, hearing protection guards against the noise of power tools, and a dust mask keeps fine sawdust out of your lungs. Loose clothing, dangling jewelry, and untied hair can catch in moving parts, so they should always be secured before you begin.
+
+A tidy workspace is a safe workspace. Keep the floor clear of offcuts and cords, make sure the area is well lit, and always know where the power switch or unplug point is before starting a machine.`,
+`## Hand Tools and Power Tools
+With hand tools, the golden rule is to keep both hands behind the cutting edge and to cut away from your body, so a slip sends the blade into the bench rather than into you. Keep chisels and saws sharp, because a dull tool needs more force and is far more likely to slip. Clamp your workpiece down instead of holding it by hand, leaving both hands free to control the tool.
+
+Power tools demand extra respect. Always unplug a tool before changing a blade or bit, and let a blade come to a complete stop before setting the tool down. Never remove a saw's guard, and feed material at a steady, controlled pace rather than forcing it. Most importantly, never work when you are tired or distracted, because the vast majority of workshop injuries happen in a single careless moment. Good habits, practiced every time, are what keep experienced woodworkers safe.`],
+   graph:{nodes:['Carpentry Safety','Protective Equipment','Safety Glasses','Workspace','Hand Tools','Power Tools','Clamping','Blade Guard'],
+     edges:[['Carpentry Safety','Protective Equipment'],['Protective Equipment','Safety Glasses'],['Carpentry Safety','Workspace'],['Carpentry Safety','Hand Tools'],['Carpentry Safety','Power Tools'],['Hand Tools','Clamping'],['Power Tools','Blade Guard'],['Power Tools','Clamping']]},
+   mastery:{'Carpentry Safety':72,'Protective Equipment':78,'Safety Glasses':80,Workspace:64,'Hand Tools':58,'Power Tools':50,Clamping:54,'Blade Guard':46}},
+ ]},
+];
+// Flat lookup + attach subject to each topic.
+const DEMO_INDEX={}; DEMO_LIB.forEach(c=>c.topics.forEach(t=>{t.subject=c.subject; DEMO_INDEX[t.id]=t;}));
+const DEFAULT_DEMO='genetics';  // featured one-click demo (change to any topic id)
+
+async function openFile(file){
+  setDemo(false);
+  const name=file.name, ext=name.split('.').pop().toLowerCase();
+  toast('Reading '+name+'…');
+  if(ext==='pdf'){
+    if(!PDF_OK){toast('PDF engine didn\'t load — check your connection and refresh');return;}
+    const buf=await file.arrayBuffer(); await loadPDF(buf,name); }
+  else if(ext==='docx'){
+    if(!DOCX_OK){toast('DOCX engine didn\'t load — try a PDF or TXT, or refresh');return;}
+    const buf=await file.arrayBuffer();
+    const res=await mammoth.extractRawText({arrayBuffer:buf});
+    loadText(splitPages(res.value),name.replace(/\.docx$/i,''),'docx'); }
+  else if(ext==='txt'){ const t=await file.text(); loadText(splitPages(t),name.replace(/\.txt$/i,''),'txt'); }
+  else toast('Unsupported file type');
+  addToShelf();
+}
+function splitPages(raw){
+  const clean=raw.replace(/\r/g,'').replace(/\n{3,}/g,'\n\n').trim();
+  const paras=clean.split(/\n\n+/);
+  const pages=[]; let buf='';
+  for(const p of paras){ buf+=(buf?'\n\n':'')+p;
+    if(buf.length>1600){pages.push(buf);buf='';} }
+  if(buf)pages.push(buf);
+  return pages.length?pages:[clean];
+}
+function loadText(pages,title,type){
+  S.book={id:'b'+Date.now(),title,type,pages:pages.map(p=> typeof p==='string'?{text:p}:{text:p.text||'',img:p.img,credit:p.credit})};
+  S.page=0; setDemo(false); enterReader(); renderTextPage();
+}
+async function loadPDF(buf,title){
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  S.book={id:'b'+Date.now(),title:title.replace(/\.pdf$/i,''),type:'pdf',pdf,pages:new Array(pdf.numPages)};
+  S.page=0; enterReader(); await renderPDFPage();
+}
+
+function addToShelf(){
+  if(!S.book)return;
+  let sh=JSON.parse(localStorage.getItem(LS+'_shelf')||'[]');
+  sh=sh.filter(x=>x.title!==S.book.title);
+  // Text-based books (sample, txt, docx) store their extracted pages so they can
+  // reopen instantly. PDFs can't be stored (too large / binary) — re-upload only.
+  const reopenable = S.book.type!=='pdf';
+  const entry={title:S.book.title,type:S.book.type,when:Date.now(),reopenable};
+  if(S.book.demoId)entry.demoId=S.book.demoId;
+  if(reopenable){
+    const pagesText=S.book.pages.map(p=>p.text);
+    const payload=JSON.stringify(pagesText);
+    // only store if it comfortably fits (keep well under the localStorage budget)
+    if(payload.length<220000){ entry.pages=pagesText; }
+    else { entry.reopenable=false; }
+  }
+  sh.unshift(entry);
+  // keep at most 3 stored-text books + a few reference-only entries
+  let stored=0;
+  sh=sh.filter(x=>{ if(x.pages){ stored++; if(stored>3){ delete x.pages; x.reopenable=false; } } return true; });
+  sh=sh.slice(0,8);
+  try{ localStorage.setItem(LS+'_shelf',JSON.stringify(sh)); }
+  catch(e){ // storage full: drop stored page content and retry lean
+    sh=sh.map(x=>{ const y={title:x.title,type:x.type,when:x.when,reopenable:false}; return y; });
+    try{ localStorage.setItem(LS+'_shelf',JSON.stringify(sh)); }catch(_){}
+  }
+}
+function reopenShelfItem(idx){
+  const sh=JSON.parse(localStorage.getItem(LS+'_shelf')||'[]');
+  const x=sh[idx]; if(!x)return;
+  if(x.demoId && DEMO_INDEX[x.demoId]){ loadDemo(x.demoId); return; }
+  if(x.reopenable && Array.isArray(x.pages)){
+    loadText(x.pages, x.title, x.type==='pdf'?'text':x.type);
+    addToShelf(); // refresh recency
+  } else {
+    // can't restore content — open the file picker so the user re-uploads
+    toast('This file is too large to save — please pick it again');
+    $('#fileInput').click();
+  }
+}
+function renderShelf(){
+  const sh=JSON.parse(localStorage.getItem(LS+'_shelf')||'[]');
+  const el=$('#shelf');
+  if(!sh.length){el.innerHTML='<h3>Recently opened</h3><div class="shelfEmpty"><span aria-hidden="true">📖</span> Your recently opened lessons and documents will appear here.</div>';return;}
+  el.innerHTML='<div class="shelfHead"><h3>Recently opened</h3><button class="shelfClear" id="clearRecent">Clear</button></div>'+sh.map((x,i)=>{
+    const can=x.reopenable && Array.isArray(x.pages);
+    const sub=can ? `${x.type.toUpperCase()} · click to reopen`
+                  : `${x.type.toUpperCase()} · click to re-upload`;
+    return `<button class="shelfItem" data-idx="${i}" title="${can?'Reopen':'Re-upload'} ${esc(x.title)}">
+      <span class="spine"></span>
+      <span class="meta"><span class="t">${esc(x.title)}</span><span class="d">${sub}</span></span>
+      <span class="shelfGo">${can?'↻':'↑'}</span>
+    </button>`;
+  }).join('');
+  el.querySelectorAll('.shelfItem').forEach(b=>{
+    b.onclick=()=>reopenShelfItem(+b.dataset.idx);
+  });
+  const cr=$('#clearRecent'); if(cr)cr.onclick=()=>{ if(confirm('Clear your recently opened list? Your saved progress will not be affected.')){ localStorage.removeItem(LS+'_shelf'); renderShelf(); } };
+}
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* ============ Reader rendering ============ */
+function enterReader(){
+  $('#library').style.display='none';
+  $('#reader').style.display='flex';
+  $('#bookTitleBar').textContent=S.book.title;
+  startReadTimer();
+}
+function goLibrary(){
+  $('#reader').style.display='none';
+  $('#library').style.display='flex';
+  $('#bookTitleBar').textContent='';
+  setDemo(false); renderShelf(); stopReadTimer();
+}
+function pageCount(){ return S.book?(S.book.type==='pdf'?S.book.pdf.numPages:S.book.pages.length):0 }
+
+function renderTextPage(){
+  const tp=$('#textPage'),pw=$('#pdfWrap');
+  pw.style.display='none'; tp.style.display='block';
+  const pg=S.book.pages[S.page];
+  const raw=pg.text;
+  S.pageText=raw.replace(/^## .*$/gm,'').trim();
+  let pi=0;
+  const html=raw.split(/\n\n+/).map((block)=>{
+    // A block can lead with a "## Heading" line followed by body text on the next
+    // line(s). Split the heading off so the body renders as its own paragraph
+    // instead of the whole block becoming one giant heading.
+    let out=''; let body=block;
+    const m=block.match(/^##\s+(.+)/);
+    if(m){ out+='<h2>'+esc(m[1].trim())+'</h2>'; body=block.slice(m[0].length).replace(/^\n+/,''); }
+    if(body.trim()){
+      const i=pi++;
+      const hlKey=S.page+'_'+i;
+      const cls=(S.highlights[S.book.id]&&S.highlights[S.book.id][hlKey])?' class="hl-p"':'';
+      out+=`<p data-p="${i}"${cls}>${esc(body)}</p>`;
+    }
+    return out;
+  }).join('');
+  let fig='';
+  if(pg.img){ fig=`<figure class="rfig"><img src="${esc(pg.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.rfig').classList.add('rfig-fail')">${pg.credit?`<figcaption>${esc(pg.credit)}</figcaption>`:''}</figure>`; }
+  tp.innerHTML=fig+html;
+  afterPage();
+}
+async function renderPDFPage(){
+  const tp=$('#textPage'),pw=$('#pdfWrap');
+  tp.style.display='none'; pw.style.display='flex'; pw.innerHTML='<div class="hint" style="padding:30px">Rendering page… <span class="spin"></span></div>';
+  const page=await S.book.pdf.getPage(S.page+1);
+  const scale=Math.min(1.6,(Math.min(720,$('#readerInner').clientWidth-10))/page.getViewport({scale:1}).width);
+  const vp=page.getViewport({scale});
+  const box=document.createElement('div');box.className='pdfPageBox';
+  const canvas=document.createElement('canvas');canvas.width=vp.width;canvas.height=vp.height;
+  box.appendChild(canvas);
+  const tl=document.createElement('div');tl.className='textLayer';
+  tl.style.width=vp.width+'px';tl.style.height=vp.height+'px';box.appendChild(tl);
+  pw.innerHTML='';pw.appendChild(box);
+  await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+  const tc=await page.getTextContent();
+  pdfjsLib.renderTextLayer({textContent:tc,container:tl,viewport:vp,textDivs:[]});
+  S.pageText=tc.items.map(i=>i.str).join(' ').replace(/\s+/g,' ').trim();
+  afterPage();
+}
+function afterPage(){
+  const n=pageCount();
+  $('#pgInfo').textContent=`Page ${S.page+1} of ${n}`;
+  $('#progressFill').style.width=(((S.page+1)/n)*100)+'%';
+  const bm=S.bookmarks[S.book.id]&&S.bookmarks[S.book.id][S.page];
+  $('#bmBtn').style.color=bm?'var(--amber)':'';
+  $('#readerScroll').scrollTop=0;
+  S.stats.pagesRead++; save();
+  updateStats();
+}
+function gotoPage(p){
+  const n=pageCount(); p=Math.max(0,Math.min(n-1,p)); if(p===S.page&&S.pageText)return;
+  S.page=p;
+  if(S.book.type==='pdf')renderPDFPage(); else renderTextPage();
+}
+
+/* keyboard + wheel-free nav via buttons in bar (add prev/next) */
+document.addEventListener('keydown',e=>{
+  if($('#reader').style.display==='none')return;
+  if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT')return;
+  if(e.key==='ArrowRight')gotoPage(S.page+1);
+  if(e.key==='ArrowLeft')gotoPage(S.page-1);
+});
+
+/* ============ Read timer ============ */
+let _rt=null;
+function startReadTimer(){ stopReadTimer(); _rt=setInterval(()=>{S.stats.secReading++; if(S.stats.secReading%15===0){updateStats();save();}},1000); }
+function stopReadTimer(){ if(_rt)clearInterval(_rt); _rt=null; }
+
+/* ============ Text selection popup ============ */
+const pop=$('#selPop');
+function selText(){ const s=window.getSelection(); return s?String(s).trim():''; }
+document.addEventListener('mouseup',handleSel);
+document.addEventListener('touchend',handleSel);
+function elOf(t){ return t? (t.nodeType===1?t:t.parentElement) : null; }
+function closestOf(t,sel){ const el=elOf(t); return el&&el.closest?el.closest(sel):null; }
+function handleSel(e){
+  if(closestOf(e.target,'#selPop'))return;
+  setTimeout(()=>{
+    const t=selText();
+    const inReader=closestOf(e.target,'#readerScroll');
+    if(!t||t.length<2||!inReader){pop.style.display='none';return;}
+    const words=t.split(/\s+/).length;
+    const isWord=words===1&&t.length<=28;
+    pop.innerHTML='';
+    const mk=(lbl,fn)=>{const b=document.createElement('button');b.textContent=lbl;b.onclick=(ev)=>{ev.stopPropagation();pop.style.display='none';fn(t)};return b};
+    if(isWord){
+      pop.appendChild(mk('Define',w=>defineWord(w)));
+      pop.appendChild(mk('Translate',w=>quickTranslate(w)));
+    }else{
+      pop.appendChild(mk('Explain simply',x=>explainPara(x,'simple')));
+      const d=document.createElement('span');d.className='divv';pop.appendChild(d);
+      pop.appendChild(mk('Translate',x=>quickTranslate(x)));
+      pop.appendChild(mk('Summarize',x=>explainPara(x,'summary')));
+      pop.appendChild(mk('Ask tutor',x=>askAbout(x)));
+    }
+    const r=window.getSelection().getRangeAt(0).getBoundingClientRect();
+    pop.style.display='flex';
+    const pw=pop.offsetWidth,ph=pop.offsetHeight;
+    let left=r.left+r.width/2-pw/2, top=r.top-ph-8;
+    left=Math.max(8,Math.min(window.innerWidth-pw-8,left));
+    if(top<8)top=r.bottom+8;
+    pop.style.left=left+'px';pop.style.top=top+'px';
+  },10);
+}
+document.addEventListener('mousedown',e=>{ if(!closestOf(e.target,'#selPop'))pop.style.display='none'; });
+
+/* ============ AI actions ============ */
+function ctx(){ return S.pageText? `\n\nContext — the passage the student is currently reading:\n"""${S.pageText.slice(0,1800)}"""`:''; }
+const TUTOR_SYS=`You are the DigiBook AI tutor, a warm, encouraging teacher for students and lifelong learners. Keep answers clear and concise. Never mention which AI model or company powers you; you are simply "the DigiBook AI tutor." Use plain language and concrete examples.`;
+
+function pushChat(role,content,src){ S.chat.push({role,content,src}); renderChat(); }
+function openTutor(){ switchTab('learn'); }
+
+async function defineWord(w){
+  S.stats.wordsTapped++; save(); openTutor();
+  pushChat('user','Define: '+w);
+  const t=typingMsg();
+  const lang=$('#langSel').value;
+  const sys=TUTOR_SYS;
+  const usr=`Define the word or term "${w}" for a student. Respond in ${lang}. Give: (1) a simple one-line meaning, (2) one example sentence, (3) if it's a subject-specific term, its meaning in that subject. Keep it under 70 words.${ctx()}`;
+  const r=await callAI(sys,usr);
+  t.remove();
+  if(r){pushChat('ai',r);noteConceptFromText(w);aTrackText(w,'explain');}
+  else pushChat('ai',offlineDefine(w),'offline');
+}
+async function quickTranslate(x){
+  openTutor(); const lang=$('#langSel').value;
+  if(lang==='English'){ pushChat('user','Explain simply: '+clip(x)); return explainInline(x,'simple'); }
+  pushChat('user',`Translate to ${lang}: `+clip(x));
+  const t=typingMsg();
+  const r=await callAI(TUTOR_SYS,`Translate the following into natural, fluent ${lang} (not word-for-word). Then add one short line in ${lang} explaining the main idea simply.\n\n"""${x.slice(0,1200)}"""`);
+  t.remove();
+  pushChat('ai', r||('(Offline) Translation needs the AI tutor to be connected. '+"Selected text: "+clip(x)), r?null:'offline');
+}
+async function explainPara(x,kind){ openTutor(); pushChat('user',(kind==='summary'?'Summarize: ':'Explain simply: ')+clip(x)); explainInline(x,kind); }
+async function explainInline(x,kind){
+  S.stats.parasExplained++; save();
+  const t=typingMsg(); const lang=$('#langSel').value;
+  const style=kind==='summary'
+    ?`Summarize the passage below in one or two clear sentences, in ${lang}.`
+    :`Explain the passage below in simple ${lang} that a middle-school student could follow. Use a concrete example or analogy if helpful. Under 110 words.`;
+  const r=await callAI(TUTOR_SYS,`${style}\n\n"""${x.slice(0,1600)}"""`);
+  t.remove();
+  if(r){pushChat('ai',r);noteConceptFromText(x);aTrackText(x,'explain');}
+  else pushChat('ai',offlineExplain(x,kind),'offline');
+}
+async function askAbout(x){ openTutor(); $('#chatInput').value='About this part: "'+clip(x,90)+'" — '; $('#chatInput').focus(); }
+
+function clip(s,n=60){s=s.replace(/\s+/g,' ').trim();return s.length>n?s.slice(0,n)+'…':s}
+
+/* offline fallbacks (honest, minimal) */
+function offlineDefine(w){return `(Tutor offline) I can't fetch a live definition right now. "${w}" appears in your reading — try selecting the sentence around it and using “Explain simply” once the tutor reconnects, or check a dictionary.`}
+function offlineExplain(x,kind){return `(Tutor offline) The AI tutor isn't connected, so I can't ${kind==='summary'?'summarize':'explain'} this live. Here's the passage you selected so you can re-read it:\n\n"${clip(x,220)}"`}
+
+/* ============ Chat / Socratic tutor ============ */
+function renderChat(){
+  const log=$('#chatLog');
+  if(!S.chat.length){
+    log.innerHTML=`<div class="msg sys">Ask me anything about what you're reading.<br>Select a word or paragraph in the text to define, translate, or explain it.</div>`;
+    return;
+  }
+  log.innerHTML=S.chat.map(m=>{
+    if(m.role==='sys')return `<div class="msg sys">${esc(m.content)}</div>`;
+    const src=m.src==='offline'?`<span class="src">tutor offline — reconnect for a live answer</span>`:'';
+    return `<div class="msg ${m.role==='user'?'user':'ai'}">${esc(m.content)}${src}</div>`;
+  }).join('');
+  log.scrollTop=log.scrollHeight;
+}
+function typingMsg(){
+  const log=$('#chatLog');
+  const d=document.createElement('div');d.className='msg ai';
+  d.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';
+  log.appendChild(d);log.scrollTop=log.scrollHeight;return d;
+}
+async function sendChat(){
+  const inp=$('#chatInput'); const q=inp.value.trim(); if(!q)return;
+  inp.value=''; inp.style.height='auto';
+  pushChat('user',q);
+  const t=typingMsg();
+  const lang=$('#langSel').value;
+  const history=S.chat.slice(-8).filter(m=>m.role!=='sys').map(m=>`${m.role==='user'?'Student':'Tutor'}: ${m.content}`).join('\n');
+  let sys=TUTOR_SYS;
+  if(S.socratic){
+    sys+=` IMPORTANT: Use the Socratic method. Instead of immediately giving the full answer, guide the student with one focused question at a time that leads them to reason it out. Only give a direct answer if the student is clearly stuck after trying, or explicitly asks you to just tell them. Keep each turn short (1–3 sentences).`;
+  }else{
+    sys+=` Answer the student's question clearly and directly, with a brief example. Keep it concise.`;
+  }
+  const usr=`Respond in ${lang}.${ctx()}\n\nConversation so far:\n${history}\n\nRespond as the tutor to the student's latest message.`;
+  const r=await callAI(sys,usr);
+  t.remove();
+  if(r){ pushChat('ai',r); noteConceptFromText(q); aTrackText(q,'tutor'); }
+  else pushChat('ai',`(Tutor offline) I can't reach the AI tutor right now, so I can't respond live. Your question is saved above — try again once the connection is back.`,'offline');
+}
+
+/* ============ Concept tracking / Open Student Model ============ */
+const STOP=new Set('the a an and or of to in on for is are was were be been with as at by this that these those it its from into your you their his her our we they he she what how why when where which who whom will would can could should may might must not no yes do does did has have had about above after again all also am any because before below between both but each few more most other some such than then there here these they what who i me my we us our'.split(' '));
+function noteConceptFromText(txt){
+  // pull capitalized / domain-ish terms as candidate concepts, bump "seen"
+  const words=(txt||'').replace(/[^A-Za-z\- ]/g,' ').split(/\s+/).filter(Boolean);
+  const cand=new Set();
+  words.forEach(w=>{ const lw=w.toLowerCase();
+    if(w.length>=4 && !STOP.has(lw) && (/^[A-Z]/.test(w)||w.length>=7)) cand.add(cap(lw)); });
+  cand.forEach(c=>{ if(!S.concepts[c])S.concepts[c]={score:null,seen:0}; S.concepts[c].seen++; });
+  save(); renderModel();
+}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1)}
+function bumpConcept(name,delta){
+  name=cap(name.toLowerCase().trim());
+  if(!S.concepts[name])S.concepts[name]={score:50,seen:1};
+  const c=S.concepts[name];
+  c.score = c.score==null?50:c.score;
+  c.score = Math.max(0,Math.min(100,Math.round(c.score+delta)));
+  save(); renderModel(); renderGraph();
+}
+function assessedConcepts(){ return Object.entries(S.concepts).filter(([_,c])=>c.score!=null).sort((a,b)=>a[1].score-b[1].score); }
+// Weakest assessed concepts (below mastery), lowest score first — drives the adaptive quiz.
+function weakConcepts(n){ return assessedConcepts().filter(([_,c])=>c.score<75).slice(0,n).map(([name])=>name); }
+function scoreClass(v){ return v>=75?'g':v>=50?'a':'r'; }
+
+function renderModel(){
+  const pad=$('#modelPad');
+  const assessed=assessedConcepts();
+  const seenOnly=Object.entries(S.concepts).filter(([_,c])=>c.score==null).sort((a,b)=>b[1].seen-a[1].seen).slice(0,8);
+  let html=`<div class="card"><h4>Open Student Model</h4><p class="hint">This is <b>your</b> model — it's meant to be visible. Scores rise when you answer quizzes correctly and fall on misses. Concepts you've only encountered appear below as “seen.”</p></div>`;
+  if(assessed.length){
+    html+='<div class="card"><h4>Assessed concepts</h4>';
+    assessed.forEach(([name,c])=>{
+      html+=`<div class="conceptRow"><div class="top"><span>${esc(name)}</span><span class="pct">${c.score}%</span></div>
+        <div class="bar"><div class="${scoreClass(c.score)}" style="width:${c.score}%"></div></div></div>`;
+    });
+    html+='</div>';
+  }else{
+    html+=`<div class="card"><p class="hint">No concepts assessed yet. Take a quiz (the <b>Quiz</b> tab or “Quiz me on this”) and your mastery scores will appear here.</p></div>`;
+  }
+  if(seenOnly.length){
+    html+='<div class="card"><h4>Concepts you\'ve encountered</h4><div style="display:flex;flex-wrap:wrap;gap:6px">'+
+      seenOnly.map(([n])=>`<span class="pill" style="cursor:default">${esc(n)}</span>`).join('')+'</div></div>';
+  }
+  pad.innerHTML=html;
+}
+
+/* ============ Quiz ============ */
+async function generateQuiz(){
+  const pad=$('#quizPad'); switchTab('quiz');
+  if(!S.book){pad.innerHTML='<div class="card"><p class="hint">Open a book first, then generate a quiz.</p></div>';return;}
+  pad.innerHTML='<div class="card"><p class="hint">Building a quiz from this page… <span class="spin"></span></p></div>';
+  const sys=`You write short, fair comprehension quizzes for students. Output ONLY valid JSON.`;
+  // Adaptive: fold the student's weakest concepts into the prompt so the quiz
+  // prioritizes what they haven't mastered yet — closing the student-model loop.
+  const focusList=weakConcepts(5);
+  const focus=focusList.length
+    ? `\n\nThe student is still building these concepts (weakest first): ${focusList.join(', ')}. If any appear in the passage, prioritize testing them and name the matching "concept" exactly.`
+    : '';
+  const usr=`From the passage below, write 4 multiple-choice questions testing understanding (not trivia). Each: a "q" (question), "options" (array of exactly 4 strings), "answer" (index 0-3 of the correct option), "explain" (one-sentence why), and "concept" (1-3 word topic name the question tests). Return ONLY a JSON array.${focus}\n\nPassage:\n"""${S.pageText.slice(0,2200)}"""`;
+  let quiz=await callAIJSON(sys,usr);
+  let usedAI=Array.isArray(quiz)&&quiz.length>0;
+  if(!usedAI){ quiz=fallbackQuiz(); }
+  quiz=(quiz||[]).filter(q=>q&&q.q&&Array.isArray(q.options)&&q.options.length===4);
+  if(!quiz.length){pad.innerHTML='<div class="card"><p class="hint">There isn\'t enough text on this page to build a quiz. Try a page with a few full paragraphs, or turn the page.</p></div>';return;}
+  S.quiz={items:quiz,answers:new Array(quiz.length).fill(null),done:false,offline:!usedAI,focus:usedAI?focusList:[]};
+  renderQuiz();
+}
+/* ============ Offline text analysis (works on ANY page) ============
+   When the AI tutor is offline, these build a usable quiz / flashcards / concept
+   map straight from the page text so the app still demos. Output is labeled as a
+   built-in fallback, never presented as AI-generated. */
+const OFFLINE_STOP=new Set(('the a an and or of to in on for is are was were be been being with as at by this that these those it its from into your you their his her our we they he she what how why when where which who whom will would can could should may might must not no yes do does did has have had about above after again all also am any because before below between both but each few more most other some such than then there here while during through over under out up down off once so very just only own same too one two three many carry carries carried called calls calling make makes made making means meaning use uses used using contain contains containing include includes including different differ example examples actual actually often usually either neither person people thing things able become becomes became being come comes coming give gives given goes going keep keeps large later leave less likely look looks main much need needs part parts place places point points result results show shows since small still take takes taken tell tells turn turns want wants ways within without work works even every another whether however therefore').split(/\s+/));
+function offlineSentences(txt){
+  return (txt||'').replace(/\s+/g,' ')
+    .split(/(?<=[.!?])\s+/)
+    .map(s=>s.trim())
+    .filter(s=>s.length>40 && s.length<240 && /[a-z]/i.test(s));
+}
+function offlineKeyTerms(txt){
+  const words=(txt||'').replace(/[^A-Za-z\- ]/g,' ').split(/\s+/).filter(Boolean);
+  const freq={}, capHits={};
+  words.forEach(w=>{ const lw=w.toLowerCase();
+    if(lw.length<5||OFFLINE_STOP.has(lw))return;
+    const key=cap(lw); freq[key]=(freq[key]||0)+1;
+    if(/^[A-Z]/.test(w)) capHits[key]=(capHits[key]||0)+1; // domain terms recur capitalized
+  });
+  return Object.entries(freq)
+    // Drop one-off filler: keep terms that repeat, are long, or appear capitalized.
+    .filter(([k,n])=> n>1 || k.length>=7 || (capHits[k]||0)>0)
+    // Rank by frequency, then capitalized emphasis, then length.
+    .sort((a,b)=> b[1]-a[1] || ((capHits[b[0]]||0)-(capHits[a[0]]||0)) || b[0].length-a[0].length)
+    .map(e=>e[0]);
+}
+function pickDistractors(correct, pool, n){
+  const out=[]; const used=new Set([correct.toLowerCase()]);
+  for(const p of pool){ if(out.length>=n)break;
+    if(!used.has(p.toLowerCase())){ out.push(p); used.add(p.toLowerCase()); } }
+  const filler=["None of these","All of these","Not stated in the text","A different concept"];
+  let fi=0; while(out.length<n){ out.push(filler[fi++%filler.length]); }
+  return out;
+}
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function fallbackQuiz(){
+  const sents=offlineSentences(S.pageText);
+  const terms=offlineKeyTerms(S.pageText);
+  if(sents.length<2 || terms.length<3) return null;
+  const out=[]; const usedTerm=new Set();
+  for(const s of sents){
+    if(out.length>=4)break;
+    const t=terms.find(t=>!usedTerm.has(t) && new RegExp('\\b'+t+'\\b','i').test(s));
+    if(!t)continue;
+    usedTerm.add(t);
+    const blanked=s.replace(new RegExp('\\b'+t+'\\b','i'),'_____');
+    const distractors=pickDistractors(t, terms.filter(x=>x!==t), 3);
+    const options=shuffle([t,...distractors]);
+    out.push({
+      q:'Fill in the blank: "'+blanked+'"',
+      options,
+      answer:options.indexOf(t),
+      explain:'The passage uses "'+t+'" in this sentence.',
+      concept:t
+    });
+  }
+  return out.length?out:null;
+}
+function renderQuiz(){
+  const pad=$('#quizPad'); const Q=S.quiz;
+  if(Q.done){ return renderQuizResult(); }
+  const offNote=Q.offline?' <br><span style="color:var(--amber)">Built-in offline quiz (AI tutor is offline).</span>':'';
+  const focusNote=(Q.focus&&Q.focus.length)?`<div class="card" style="border-left:3px solid var(--blue)"><h4>Adaptive focus</h4><p class="hint">Targeting concepts you're still building: <b>${Q.focus.map(esc).join(', ')}</b>. Answer well and they'll rise in your model.</p></div>`:'';
+  let html=`<div class="card"><h4>Quick quiz · ${Q.items.length} questions</h4><p class="hint">Answer each, then submit. Your results update your student model and knowledge graph.${offNote}</p></div>${focusNote}`;
+  Q.items.forEach((it,qi)=>{
+    html+=`<div class="qCard" data-q="${qi}"><div class="qq">${qi+1}. ${esc(it.q)}</div>`;
+    it.options.forEach((op,oi)=>{
+      const sel=Q.answers[qi]===oi?' sel':'';
+      html+=`<button class="qOpt${sel}" data-q="${qi}" data-o="${oi}">${esc(op)}</button>`;
+    });
+    html+=`<div class="qExp" id="exp${qi}">${esc(it.explain||'')}</div></div>`;
+  });
+  html+=`<button class="btn" id="submitQuiz" style="width:100%;justify-content:center;margin-top:4px">Submit answers</button>`;
+  pad.innerHTML=html;
+  pad.querySelectorAll('.qOpt').forEach(b=>b.onclick=()=>{
+    const qi=+b.dataset.q,oi=+b.dataset.o;
+    S.quiz.answers[qi]=oi;
+    pad.querySelectorAll(`.qOpt[data-q="${qi}"]`).forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel');
+  });
+  $('#submitQuiz').onclick=submitQuiz;
+}
+function submitQuiz(){
+  const Q=S.quiz;
+  if(Q.answers.includes(null)){toast('Answer all questions first');return;}
+  Q.done=true;
+  let correct=0;
+  Q.items.forEach((it,qi)=>{
+    const ok=Q.answers[qi]===it.answer; if(ok)correct++;
+    const c=it.concept||'General';
+    const prev=(S.concepts[aKey(c)]&&S.concepts[aKey(c)].score);
+    aQuiz(c, ok);
+    bumpConcept(c, ok?+12:-10);
+    const now=(S.concepts[aKey(c)]&&S.concepts[aKey(c)].score);
+    aImprove(c, prev, now);
+  });
+  if(S.quiz.adaptiveConcept){ S.adaptive.completed.unshift({concept:aKey(S.quiz.adaptiveConcept),at:Date.now(),pct:Math.round(correct/Q.items.length*100)}); S.adaptive.completed=S.adaptive.completed.slice(0,30); }
+  S.stats.quizzesTaken++; S.stats.quizCorrect+=correct; S.stats.quizTotal+=Q.items.length; save();
+  Q.correct=correct; renderQuizResult(); updateStats(); adaptiveRecalc();
+}
+function renderQuizResult(){
+  const pad=$('#quizPad'),Q=S.quiz;
+  const pct=Math.round(Q.correct/Q.items.length*100);
+  let html=`<div class="card"><div class="scoreBig">${Q.correct}/${Q.items.length}</div>
+    <p class="hint" style="text-align:center">${pct>=75?'Strong work — those concepts moved up in your model.':pct>=50?'Getting there — the weaker concepts are flagged for review.':'These concepts need another pass. Try the tutor or flashcards.'}</p></div>`;
+  Q.items.forEach((it,qi)=>{
+    html+=`<div class="qCard"><div class="qq">${qi+1}. ${esc(it.q)}</div>`;
+    it.options.forEach((op,oi)=>{
+      let cls='qOpt';
+      if(oi===it.answer)cls+=' correct';
+      else if(oi===Q.answers[qi])cls+=' wrong';
+      html+=`<div class="${cls}">${esc(op)}</div>`;
+    });
+    html+=`<div class="qExp" style="display:block">${esc(it.explain||'')}</div></div>`;
+  });
+  if(Q.adaptiveConcept){
+    const mm=S.concepts[aKey(Q.adaptiveConcept)]?S.concepts[aKey(Q.adaptiveConcept)].score:null;
+    const okEnough=mm!=null&&mm>=50;
+    html+=`<div class="card" style="border-left:3px solid var(--${okEnough?'green':'amber'})"><h5 class="aH5">${okEnough?"You're ready to continue":"Let's approach this another way"}</h5><p class="hint">${okEnough?esc(cap(Q.adaptiveConcept.toLowerCase()))+' is looking stronger. Head back to your path for the next step.':'This concept still needs a little work. Try a simpler explanation or another set of questions.'}</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">${okEnough?'':'<button class="btn ghost" id="aReexplain" style="padding:7px 12px;font-size:12px">Explain it simply</button>'}<button class="btn" id="aBackPath" style="padding:7px 14px;font-size:12px">Back to Adaptive Path</button></div></div>`;
+  }
+  html+=`<button class="btn ghost" id="newQuiz" style="width:100%;justify-content:center">New quiz from this page</button>`;
+  pad.innerHTML=html;
+  $('#newQuiz').onclick=generateQuiz;
+  if(Q.adaptiveConcept){ const bp=$('#aBackPath'); if(bp)bp.onclick=()=>{ switchTab('progress'); progressSub('adaptive'); }; const rx=$('#aReexplain'); if(rx)rx.onclick=()=>adaptiveReview(Q.adaptiveConcept); }
+}
+
+/* ============ Flashcards ============ */
+async function generateCards(){
+  const pad=$('#cardsPad'); switchTab('progress'); progressSub('cards');
+  if(!S.book){pad.innerHTML='<div class="card"><p class="hint">Open a book to generate flashcards.</p></div>';return;}
+  pad.innerHTML='<div class="card"><p class="hint">Creating flashcards from this page… <span class="spin"></span></p></div>';
+  const sys=`You create concise study flashcards for students. Output ONLY valid JSON.`;
+  const usr=`From the passage below, create 5 flashcards for the key terms/concepts. Each: "front" (a term or question) and "back" (a short, clear answer, max 25 words). Return ONLY a JSON array.\n\n"""${S.pageText.slice(0,2200)}"""`;
+  let cards=await callAIJSON(sys,usr);
+  let usedAI=Array.isArray(cards)&&cards.length>0;
+  if(!usedAI){ cards=fallbackCards(); }
+  cards=(cards||[]).filter(c=>c&&c.front&&c.back);
+  if(!cards.length){pad.innerHTML='<div class="card"><p class="hint">There isn\'t enough text on this page to build flashcards. Try a page with a few full paragraphs.</p></div>';return;}
+  S.cards=cards; S.cardIdx=0; S.cardsOffline=!usedAI; save(); renderCards();
+}
+function fallbackCards(){
+  const sents=offlineSentences(S.pageText);
+  const terms=offlineKeyTerms(S.pageText);
+  if(!terms.length||!sents.length)return null;
+  const out=[]; const used=new Set();
+  for(const t of terms){
+    if(out.length>=5)break;
+    if(used.has(t))continue;
+    const s=sents.find(s=>new RegExp('\\b'+t+'\\b','i').test(s));
+    if(!s)continue;
+    used.add(t);
+    out.push({front:t, back:s});
+  }
+  return out.length?out:null;
+}
+function renderCards(){
+  const pad=$('#cardsPad');
+  if(!S.cards.length){pad.innerHTML='<div class="card"><p class="hint">No flashcards yet. Press below to generate from the current page.</p><button class="btn" id="genCards" style="margin-top:10px">Generate flashcards</button></div>';$('#genCards').onclick=generateCards;return;}
+  const c=S.cards[S.cardIdx];
+  pad.innerHTML=`
+    <div class="card"><h4>Flashcards</h4><p class="hint">Tap the card to flip. Swipe through your deck for this page.${S.cardsOffline?' <br><span style="color:var(--amber)">Built-in offline deck (AI tutor is offline).</span>':''}</p></div>
+    <div id="fcStage"><div id="fcCard">
+      <div class="fcFace front"><span class="lbl">Front</span><span>${esc(c.front)}</span></div>
+      <div class="fcFace back"><span class="lbl">Back</span><span>${esc(c.back)}</span></div>
+    </div></div>
+    <div id="fcNav">
+      <button class="btn ghost" id="fcPrev" style="padding:7px 12px">‹ Prev</button>
+      <span>${S.cardIdx+1} / ${S.cards.length}</span>
+      <button class="btn ghost" id="fcNext" style="padding:7px 12px">Next ›</button>
+    </div>
+    <button class="btn ghost" id="regenCards" style="width:100%;justify-content:center;margin-top:14px">New deck from this page</button>`;
+  const card=$('#fcCard');
+  card.onclick=()=>card.classList.toggle('flip');
+  $('#fcPrev').onclick=()=>{S.cardIdx=(S.cardIdx-1+S.cards.length)%S.cards.length;renderCards();};
+  $('#fcNext').onclick=()=>{S.cardIdx=(S.cardIdx+1)%S.cards.length;renderCards();};
+  $('#regenCards').onclick=generateCards;
+}
+
+/* ============ Knowledge Graph ============ */
+async function buildGraph(){
+  const hint=$('#graphHint');
+  if(!S.book){hint.textContent='Open a book first.';return;}
+  hint.innerHTML='Mapping concepts… <span class="spin"></span>';
+  const sys=`You extract concept maps from study text. Output ONLY valid JSON.`;
+  const usr=`From the passage, extract 5-8 key concepts and how they connect. Return ONLY JSON: {"nodes":["Concept A","Concept B",...],"edges":[["Concept A","Concept B"],...]}. Edges link related or prerequisite concepts. Use short names (1-3 words).\n\n"""${S.pageText.slice(0,2200)}"""`;
+  let g=await callAIJSON(sys,usr);
+  let usedAI=!!(g&&g.nodes&&g.nodes.length);
+  if(!usedAI){ g=fallbackGraph(); }
+  if(!g||!g.nodes||!g.nodes.length){hint.textContent='Not enough text on this page to map. Try a fuller page.';return;}
+  // merge scores from student model
+  S.graph={nodes:g.nodes.slice(0,9),edges:(g.edges||[]).filter(e=>Array.isArray(e)&&e.length===2)};
+  // register nodes as concepts (seen)
+  S.graph.nodes.forEach(n=>{const k=cap(n.toLowerCase());if(!S.concepts[k])S.concepts[k]={score:null,seen:1};});
+  hint.textContent = usedAI ? 'Drag nodes to rearrange.' : 'Built-in offline map (AI tutor is offline). Drag nodes to rearrange.';
+  save(); renderGraph();
+}
+function fallbackGraph(){
+  const sents=offlineSentences(S.pageText);
+  const terms=offlineKeyTerms(S.pageText).slice(0,7);
+  if(terms.length<3)return null;
+  // edge between two terms if they co-occur in the same sentence
+  const edges=[];
+  for(let i=0;i<terms.length;i++)for(let j=i+1;j<terms.length;j++){
+    const a=terms[i],b=terms[j];
+    const together=sents.some(s=>new RegExp('\\b'+a+'\\b','i').test(s)&&new RegExp('\\b'+b+'\\b','i').test(s));
+    if(together)edges.push([a,b]);
+  }
+  // ensure the graph is connected enough to look meaningful: chain any orphans
+  if(edges.length<terms.length-1){
+    for(let i=0;i<terms.length-1;i++){
+      const pair=[terms[i],terms[i+1]];
+      if(!edges.some(e=>(e[0]===pair[0]&&e[1]===pair[1])||(e[0]===pair[1]&&e[1]===pair[0])))edges.push(pair);
+    }
+  }
+  return {nodes:terms, edges};
+}
+function conceptScore(name){ const c=S.concepts[cap(name.toLowerCase())]; return c?c.score:null; }
+function nodeColor(name){ const s=conceptScore(name);
+  if(s==null)return {fill:'var(--paper)',stroke:'var(--ink-soft)'};
+  if(s>=75)return {fill:'var(--green-soft)',stroke:'var(--green)'};
+  if(s>=50)return {fill:'var(--amber-soft)',stroke:'var(--amber)'};
+  return {fill:'var(--rust-soft)',stroke:'var(--rust)'};
+}
+let graphSim=null;
+function renderGraph(){
+  const svg=$('#graphSvg'), empty=$('#graphEmpty');
+  if(!S.graph||!Array.isArray(S.graph.nodes)||!S.graph.nodes.length){empty.style.display='flex';svg.innerHTML='';return;}
+  if(!Array.isArray(S.graph.edges))S.graph.edges=[];
+  empty.style.display='none';
+  const box=$('#graphBox').getBoundingClientRect();
+  const W=box.width||360, H=Math.max(300,box.height||340);
+  const nodes=S.graph.nodes.map((n,i)=>({id:n,
+    x:W/2+Math.cos(i/S.graph.nodes.length*6.28)*Math.min(W,H)*0.3,
+    y:H/2+Math.sin(i/S.graph.nodes.length*6.28)*Math.min(W,H)*0.3, vx:0,vy:0}));
+  const idx={}; nodes.forEach(n=>idx[n.id]=n);
+  const edges=S.graph.edges.filter(e=>idx[e[0]]&&idx[e[1]]);
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  // simple force layout
+  if(graphSim)clearInterval(graphSim);
+  let ticks=0;
+  function step(){
+    for(let a of nodes)for(let b of nodes){ if(a===b)continue;
+      let dx=a.x-b.x,dy=a.y-b.y,d=Math.hypot(dx,dy)||1;
+      const rep=1600/(d*d); a.vx+=dx/d*rep; a.vy+=dy/d*rep; }
+    for(let e of edges){const a=idx[e[0]],b=idx[e[1]];
+      let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,f=(d-90)*0.01;
+      a.vx+=dx/d*f;a.vy+=dy/d*f;b.vx-=dx/d*f;b.vy-=dy/d*f;}
+    for(let n of nodes){ if(n._drag)continue;
+      n.x+=n.vx*0.85;n.y+=n.vy*0.85;n.vx*=0.82;n.vy*=0.82;
+      n.x=Math.max(40,Math.min(W-40,n.x));n.y=Math.max(30,Math.min(H-30,n.y)); }
+    draw(); if(++ticks>200)clearInterval(graphSim);
+  }
+  function draw(){
+    let h='';
+    edges.forEach(e=>{const a=idx[e[0]],b=idx[e[1]];h+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`;});
+    nodes.forEach(n=>{const c=nodeColor(n.id);const s=conceptScore(n.id);
+      const label=n.id.length>16?n.id.slice(0,15)+'…':n.id;
+      h+=`<g class="node" data-id="${esc(n.id)}"><circle cx="${n.x}" cy="${n.y}" r="${s!=null?22:18}" fill="${c.fill}" stroke="${c.stroke}"/><text x="${n.x}" y="${n.y+34}" text-anchor="middle">${esc(label)}</text></g>`;
+    });
+    svg.innerHTML=h;
+    svg.querySelectorAll('.node').forEach(g=>{
+      g.querySelector('circle').addEventListener('mousedown',ev=>startDrag(ev,g.dataset.id));
+      g.querySelector('circle').addEventListener('touchstart',ev=>startDrag(ev,g.dataset.id),{passive:false});
+    });
+  }
+  function startDrag(ev,id){ ev.preventDefault(); const n=idx[id]; n._drag=true;
+    const pt=svg.createSVGPoint();
+    function move(e){const t=e.touches?e.touches[0]:e;pt.x=t.clientX;pt.y=t.clientY;
+      const m=pt.matrixTransform(svg.getScreenCTM().inverse());n.x=m.x;n.y=m.y;n.vx=n.vy=0;draw();}
+    function up(){n._drag=false;document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);}
+    document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+    document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);
+  }
+  graphSim=setInterval(step,1000/40); step();
+}
+
+/* ============ Stats ============ */
+function fmtTime(s){const m=Math.floor(s/60),sec=s%60;return m?`${m}m ${sec}s`:`${sec}s`;}
+function updateStats(){
+  const pad=$('#statsPad'); const st=S.stats;
+  const acc=st.quizTotal?Math.round(st.quizCorrect/st.quizTotal*100):null;
+  const assessed=assessedConcepts();
+  const strong=assessed.filter(([_,c])=>c.score>=75).length;
+  const weak=assessed.filter(([_,c])=>c.score<50).length;
+  pad.innerHTML=`
+    <div class="card"><h4>Reading analytics</h4>
+      <div class="statGrid">
+        <div class="stat"><div class="n">${st.pagesRead}</div><div class="l">page views</div></div>
+        <div class="stat"><div class="n">${fmtTime(st.secReading)}</div><div class="l">time reading</div></div>
+        <div class="stat"><div class="n">${st.wordsTapped}</div><div class="l">words looked up</div></div>
+        <div class="stat"><div class="n">${st.parasExplained}</div><div class="l">passages explained</div></div>
+      </div>
+    </div>
+    <div class="card"><h4>Learning</h4>
+      <div class="statGrid">
+        <div class="stat"><div class="n">${st.quizzesTaken}</div><div class="l">quizzes taken</div></div>
+        <div class="stat"><div class="n">${acc==null?'—':acc+'%'}</div><div class="l">quiz accuracy</div></div>
+        <div class="stat"><div class="n">${strong}</div><div class="l">strong concepts</div></div>
+        <div class="stat"><div class="n">${weak}</div><div class="l">need review</div></div>
+      </div>
+    </div>
+    <div class="card"><h4>Reset</h4><p class="hint">Your progress is stored only in this browser. Clear it to start fresh.</p>
+      <button class="btn ghost" id="resetBtn" style="margin-top:10px">Reset all progress</button></div>`;
+  $('#resetBtn').onclick=()=>{ if(confirm('Clear all concepts, scores, and analytics on this device?')){
+    localStorage.removeItem(LS); S.concepts={};S.graph=null;S.cards=[];
+    S.stats={pagesRead:0,wordsTapped:0,parasExplained:0,quizzesTaken:0,quizCorrect:0,quizTotal:0,secReading:0};
+    renderModel();renderGraph();renderCards();updateStats();toast('Progress cleared');}};
+}
+
+/* ============ Tabs ============ */
+function switchTab(name){
+  $$('#panelTabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  $$('.panelView').forEach(v=>v.classList.toggle('active',v.id==='pv-'+name));
+  if(name==='progress')progressSub(S.progressSub||'mastery');
+  if(name==='about')renderAbout();
+}
+function progressSub(name){
+  S.progressSub=name;
+  $$('#progressSub button').forEach(b=>b.classList.toggle('active',b.dataset.sub===name));
+  $$('#pv-progress .subView').forEach(v=>v.classList.toggle('active',v.id==='sv-'+name));
+  if(name==='mastery')renderModel();
+  else if(name==='cards')renderCards();
+  else if(name==='stats')updateStats();
+  else if(name==='map')renderGraph();
+  else if(name==='adaptive')renderAdaptive();
+}
+
+/* ============ Highlight & bookmark ============ */
+function toggleBookmark(){
+  if(!S.book)return;
+  S.bookmarks[S.book.id]=S.bookmarks[S.book.id]||{};
+  const on=!S.bookmarks[S.book.id][S.page];
+  S.bookmarks[S.book.id][S.page]=on;
+  $('#bmBtn').style.color=on?'var(--amber)':'';
+  toast(on?'Bookmarked page '+(S.page+1):'Bookmark removed');
+}
+let hlMode=false;
+function toggleHLMode(){
+  hlMode=!hlMode; $('#hlModeBtn').style.background=hlMode?'var(--hl)':'';
+  $('#hlModeBtn').style.color=hlMode?'#22303F':'';
+  toast(hlMode?'Highlighter on — click a paragraph':'Highlighter off');
+}
+$('#textPage').addEventListener('click',e=>{
+  if(!hlMode)return;
+  const el=e.target.nodeType===1?e.target:e.target.parentElement;
+  const p=el&&el.closest?el.closest('p[data-p]'):null; if(!p)return;
+  const key=S.page+'_'+p.dataset.p;
+  S.highlights[S.book.id]=S.highlights[S.book.id]||{};
+  const on=!S.highlights[S.book.id][key];
+  S.highlights[S.book.id][key]=on;
+  p.classList.toggle('hl-p',on);
+});
+
+/* ============ Demo Library ============ */
+function renderDemoLibrary(){
+  const menu=$('#demoMenu'); if(!menu)return;
+  const feat=DEMO_INDEX[DEFAULT_DEMO];
+  const featHTML=feat?`<button class="demoTopic demoFeat" data-id="${feat.id}"><span aria-hidden="true">▶</span> Featured demo · ${esc(feat.title)}</button>`:'';
+  menu.innerHTML=featHTML+DEMO_LIB.map(c=>`
+    <div class="demoCat${c.future?' future':''}">
+      <h5>${c.icon?`<span aria-hidden="true">${c.icon}</span>`:''}${esc(c.subject)}${c.future?'<span class="fv">FUTURE VISION</span>':''}</h5>
+      ${c.topics.map(t=>`<button class="demoTopic" data-id="${t.id}">${esc(t.title)}</button>`).join('')}
+    </div>`).join('');
+  menu.querySelectorAll('.demoTopic').forEach(b=>b.onclick=()=>{ closeDemoMenu(); loadDemo(b.dataset.id); });
+}
+function toggleDemoMenu(){ const m=$('#demoMenu'); if(m)m.classList.toggle('open'); }
+function closeDemoMenu(){ const m=$('#demoMenu'); if(m)m.classList.remove('open'); }
+function setDemo(on,label){
+  const p=$('#demoPill'); if(!p)return;
+  p.style.display=on?'inline-flex':'none';
+  if(on)p.title='Preloaded sample lesson'+(label?' · '+label:'');
+}
+function loadDemo(id){
+  const t=DEMO_INDEX[id]; if(!t)return;
+  // Seed curated mastery so Progress + Concept Map are populated instantly.
+  if(t.mastery){ Object.entries(t.mastery).forEach(([name,score])=>{ const k=cap(String(name).toLowerCase());
+    const seen=(S.concepts[k]&&S.concepts[k].seen)||0; S.concepts[k]={score:Math.round(score),seen:seen+1}; }); }
+  // Seed lightweight adaptive signals so the Adaptive Path has real inputs to reason from.
+  if(t.mastery){ Object.entries(t.mastery).forEach(([name,score])=>{ const s=aSig(name); s.previousMastery=Math.round(score);
+    if(score<52){ s.quizAttempts=3;s.correct=1;s.incorrect=2;s.tutorQuestions=1;s.explanationRequests=1;s.lastInteraction=Date.now(); }
+    else if(score<70){ s.quizAttempts=3;s.correct=2;s.incorrect=1;s.lastInteraction=Date.now(); } }); }
+  loadText(t.pages, t.title, 'text');           // clears demo flag, enters reader
+  S.book.demo=true; S.book.demoId=id;
+  if(t.graph){ S.graph={nodes:t.graph.nodes.slice(), edges:t.graph.edges.map(e=>e.slice()), offline:false}; }
+  S.cards=[]; S.cardsOffline=false; S.quiz=null; // regenerate for this topic on demand
+  setDemo(true, t.subject);
+  save(); renderModel(); renderGraph(); addToShelf();
+}
+/* ============ About (panel tab) ============ */
+function aboutBodyHTML(){
+  return `
+    <p class="aboutLede">DigiBook AI turns a static reading into an active lesson. Open a document or a demo lesson, then tap anything you don't understand and the app explains it, tutors you, checks what you've learned, and keeps a visible map of your progress.</p>
+    <h3 class="aboutH">How it works</h3>
+    <ol class="aboutSteps">
+      <li><b>Open a document or lesson.</b> Drag in a PDF, DOCX, or TXT, or pick a ready-made lesson from the Demo Library. Everything is processed in your browser; only the passages you ask about are sent to the AI tutor.</li>
+      <li><b>Read your way.</b> Resize text, switch to dark mode, bookmark pages, and highlight paragraphs as you go.</li>
+      <li><b>Select to learn.</b> Highlight a word or paragraph and choose Define, Explain simply, Translate, Summarize, or Ask tutor, in any of nine languages.</li>
+      <li><b>Get tutored, not just told.</b> In Guide me mode the tutor asks guiding questions so you reason to the answer yourself. Switch to Just answer when you want it direct.</li>
+      <li><b>Check your understanding.</b> Generate a quiz or flashcards from the current page. Quiz results raise or lower your mastery scores.</li>
+      <li><b>See what you know.</b> In Progress, the Open Student Model shows every concept as a mastery bar, and the Knowledge Graph maps how ideas connect, colored by how well you know each one.</li>
+    </ol>
+    <h3 class="aboutH">The four tabs</h3>
+    <ul class="aboutGrid">
+      <li><b>Learn</b><span>Read, then select any word or passage to define, explain, translate, or ask the Socratic tutor.</span></li>
+      <li><b>Quiz</b><span>Adaptive questions built from the page that target the concepts you're still building.</span></li>
+      <li><b>Progress</b><span>Your open student model, concept map, flashcards, and reading stats together.</span></li>
+      <li><b>About</b><span>What DigiBook AI is, how it works, and its research roots.</span></li>
+    </ul>
+    <h3 class="aboutH">Why it's different from an e-reader</h3>
+    <p class="hint">An e-reader just displays text. DigiBook AI helps you understand it: instant explanations, a tutor that asks before it tells, auto-generated quizzes and flashcards, and a mastery model that adapts what you practice next.</p>
+    <h3 class="aboutH">ARGOS connection</h3>
+    <p class="hint">DigiBook AI extends earlier ARGOS research on Socratic tutoring and open student modeling, bringing those ideas into a practical, everyday reading tool.</p>
+    <h3 class="aboutH">Demo mode · no login required</h3>
+    <p class="hint">The Demo Library ships ready-made lessons across Biology, Physics, Math, Computer Science, and a future-vision Practical Skills track. Progress is saved only in this browser; there are no accounts and nothing syncs between devices.</p>
+    <div class="aboutDisclaimer">DigiBook AI is an educational proof of concept developed by <b>Ansh Saini, a student at South Brunswick High School in New Jersey</b>. AI-generated explanations, translations, quizzes, and recommendations are intended to support learning and should not replace textbooks, teachers, or trusted academic resources.</div>`;
+}
+function renderAbout(){ const pad=$('#aboutPad'); if(pad)pad.innerHTML=aboutBodyHTML(); }
+function openHowItWorks(){ const p=$('#aboutModalPad'); if(p)p.innerHTML=aboutBodyHTML(); const o=$('#aboutOverlay'); o.classList.add('open'); o.setAttribute('aria-hidden','false'); }
+function closeHowItWorks(){ const o=$('#aboutOverlay'); o.classList.remove('open'); o.setAttribute('aria-hidden','true'); }
+
+/* ============ Adaptive Learning Path ============
+   Deterministic recommendation engine built on the existing Open Student Model
+   (S.concepts), quiz results, tutor activity, and the Concept Map (S.graph).
+   AI is used only for optional explanations / targeted questions; the core
+   prioritization is fully local. */
+const A_TIME={Review:5,Practice:2,Connect:6,Apply:4};
+const A_DESC={Review:'Short concept review with visuals and examples',
+  Practice:'A few targeted questions to build confidence',
+  Connect:'See how the next concept builds on this one',
+  Apply:'A real-world application question'};
+function aKey(n){ return cap(String(n||'').toLowerCase().trim()); }
+function aSig(n){ const k=aKey(n); if(!S.adaptive.signals[k])S.adaptive.signals[k]={quizAttempts:0,correct:0,incorrect:0,tutorQuestions:0,explanationRequests:0,lastInteraction:null,previousMastery:null}; return S.adaptive.signals[k]; }
+function aQuiz(concept,ok){ const s=aSig(concept); s.quizAttempts++; if(ok)s.correct++; else s.incorrect++; s.lastInteraction=Date.now(); }
+function aTutor(concept){ const s=aSig(concept); s.tutorQuestions++; s.lastInteraction=Date.now(); }
+function aExplain(concept){ const s=aSig(concept); s.explanationRequests++; s.lastInteraction=Date.now(); }
+function aImprove(concept,prev,now){ if(prev!=null&&now!=null&&now>prev){ S.adaptive.improvements.unshift({concept:aKey(concept),from:Math.round(prev),to:Math.round(now),at:Date.now()}); S.adaptive.improvements=S.adaptive.improvements.slice(0,8); } }
+// Attribute free-text tutor/explanation activity to concepts the student already has.
+function aTrackText(txt,kind){ const low=' '+String(txt||'').toLowerCase().replace(/[^a-z0-9\s-]/g,' ')+' '; Object.keys(S.concepts).forEach(k=>{ const name=k.toLowerCase(); if(name.length>3 && low.indexOf(' '+name+' ')>=0){ if(kind==='explain')aExplain(k); else aTutor(k); } }); save(); }
+
+function aAssessed(){ return Object.entries(S.concepts).filter(([_,c])=>c&&c.score!=null); }
+function aNeighbors(name){ const k=aKey(name),out=new Set(); if(S.graph&&Array.isArray(S.graph.edges))S.graph.edges.forEach(e=>{ if(!Array.isArray(e))return; const a=aKey(e[0]),b=aKey(e[1]); if(a===k)out.add(aKey(e[1])); else if(b===k)out.add(aKey(e[0])); }); return [...out].filter(n=>S.concepts[n]); }
+function aBand(v){ return v>=75?'Strong':v>=50?'Developing':'Needs review'; }
+function aPriority(name,c){
+  const gap=(100-c.score)/100;
+  const s=S.adaptive.signals[aKey(name)]||{};
+  const att=(s.correct||0)+(s.incorrect||0);
+  const err=att>0?(s.incorrect||0)/att:0;
+  const confusion=Math.min(1,((s.tutorQuestions||0)+(s.explanationRequests||0))/4);
+  let recency=0.25; if(s.lastInteraction){ const days=(Date.now()-s.lastInteraction)/86400000; recency=Math.max(0,Math.min(1,1-days/7)); }
+  const neigh=aNeighbors(name).filter(n=>S.concepts[n]&&S.concepts[n].score!=null);
+  const prereq=neigh.length?Math.min(1,neigh.length/2):0;
+  const score=gap*0.40+err*0.25+confusion*0.15+recency*0.10+prereq*0.10;
+  return {score,gap,err,confusion,recency,prereq,att,neigh,s};
+}
+function aRecommend(){
+  const list=aAssessed(); if(!list.length)return null;
+  const scored=list.map(([n,c])=>({name:n,c,p:aPriority(n,c)}));
+  scored.sort((x,y)=>{
+    if(Math.abs(y.p.score-x.p.score)>0.05) return y.p.score-x.p.score;
+    if(y.p.prereq!==x.p.prereq) return y.p.prereq-x.p.prereq;   // prefer prerequisite
+    if(y.p.err!==x.p.err) return y.p.err-x.p.err;               // prefer more recent errors
+    return x.c.score-y.c.score;                                  // prefer weaker
+  });
+  return scored[0];
+}
+function aActions(band){ return band==='Needs review'?['Review','Practice','Connect','Apply']:band==='Developing'?['Practice','Connect','Apply']:['Connect','Apply']; }
+function aConnectTarget(top){ // a related concept the student should move toward
+  const neigh=aNeighbors(top).filter(n=>n!==aKey(top));
+  const pool=neigh.length?neigh:aAssessed().map(([n])=>aKey(n)).filter(n=>n!==aKey(top));
+  if(!pool.length)return null;
+  // pick the neighbour with the highest adaptive priority (the next thing worth doing)
+  return pool.map(n=>({n,p:S.concepts[n]?aPriority(n,S.concepts[n]).score:0})).sort((a,b)=>b.p-a.p)[0].n;
+}
+function aApplyTarget(top){ // the umbrella / strongest concept = "real life" anchor
+  const a=aAssessed().sort((x,y)=>y[1].score-x[1].score); return a.length?aKey(a[0][0]):aKey(top); }
+function aBuildPath(rec){
+  const top=rec.name, band=aBand(rec.c.score), acts=aActions(band);
+  const connect=aConnectTarget(top), apply=aApplyTarget(top);
+  return acts.map((type,i)=>{
+    const concept = type==='Connect'?(connect||top) : type==='Apply'?(apply||top) : top;
+    const cObj=S.concepts[aKey(concept)];
+    return {n:i+1,type,concept,desc:A_DESC[type],min:A_TIME[type],mastery:(cObj&&cObj.score!=null)?cObj.score:null};
+  });
+}
+function aReasons(rec){
+  const s=rec.p.s||{},out=[];
+  if((s.incorrect||0)>0) out.push('Missed '+s.incorrect+' quiz question'+(s.incorrect>1?'s':''));
+  if((s.explanationRequests||0)>0) out.push('Asked for '+s.explanationRequests+' explanation'+(s.explanationRequests>1?'s':''));
+  else if((s.tutorQuestions||0)>0) out.push('Asked the tutor about this');
+  out.push((rec.c.score<50?'Low mastery ':'Developing mastery ')+'('+Math.round(rec.c.score)+'%)');
+  if(rec.p.recency>0.5) out.push('Recently studied');
+  if(rec.p.prereq>0 && rec.p.neigh.length){ const nb=rec.p.neigh.map(x=>cap(x.toLowerCase())).find(Boolean); if(nb) out.push('Connects to '+esc(nb)); }
+  return out;
+}
+function aRing(pct,band){
+  const r=22,C=2*Math.PI*r, col=band==='Strong'?'var(--green)':band==='Developing'?'var(--amber)':'var(--rust)';
+  const off=C*(1-(pct/100));
+  return `<svg width="58" height="58" viewBox="0 0 58 58" class="aRing"><circle cx="29" cy="29" r="${r}" fill="none" stroke="var(--line)" stroke-width="6"/><circle cx="29" cy="29" r="${r}" fill="none" stroke="${col}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 29 29)"/><text x="29" y="27" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">${Math.round(pct)}%</text><text x="29" y="39" text-anchor="middle" font-size="7.5" fill="var(--ink-soft)">Mastery</text></svg>`;
+}
+function aStepIco(t){ return t==='Review'?'📖':t==='Practice'?'✍️':t==='Connect'?'🔗':'🌍'; }
+
+function renderAdaptive(){
+  const pad=$('#adaptivePad'); if(!pad)return;
+  if(!S.book){
+    pad.innerHTML=`<div class="card"><h4>Adaptive Learning Path</h4><p class="hint">Start learning to build your path. Open a lesson or upload a document and DigiBook will build your adaptive path as it learns how you learn.</p><button class="btn" id="aOpenDemo" style="margin-top:12px">Open demo lesson</button></div>`;
+    $('#aOpenDemo').onclick=()=>loadDemo(DEFAULT_DEMO); return;
+  }
+  const assessed=aAssessed();
+  if(!assessed.length){
+    pad.innerHTML=`<div class="card"><h4>Adaptive Learning Path</h4><p class="hint">Let's learn what you know. Take a short quiz so DigiBook can personalize your first learning path.</p><button class="btn" id="aCheck" style="margin-top:12px">Check my understanding</button></div>`;
+    $('#aCheck').onclick=()=>generateQuiz(); return;
+  }
+  const rec=aRecommend();
+  const band=aBand(rec.c.score);
+  const path=aBuildPath(rec);
+  const reasons=aReasons(rec);
+  const lessonMin=(band==='Needs review'?A_TIME.Review+A_TIME.Practice:band==='Developing'?A_TIME.Practice+A_TIME.Connect:A_TIME.Connect+A_TIME.Apply);
+  const bandCls=band==='Strong'?'g':band==='Developing'?'a':'r';
+  // overview
+  const overall=Math.round(assessed.reduce((s,[_,c])=>s+c.score,0)/assessed.length);
+  const strong=assessed.filter(([_,c])=>c.score>=75).length;
+  const needP=assessed.filter(([_,c])=>c.score<75).length;
+  const done=S.adaptive.completed.length;
+  const imp=S.adaptive.improvements[0];
+  const connect=aConnectTarget(rec.name), apply=aApplyTarget(rec.name);
+  const nx=(n)=>cap(String(n).toLowerCase());
+
+  let h='';
+  h+=`<div class="aHead"><div><h4 style="margin:0">Adaptive Learning Path <span class="subNew">BETA</span></h4><p class="hint" style="margin:4px 0 0">Personalized from what you read, ask, and how you perform.</p></div><button class="aHowBtn" id="aHowBtn" title="How it works">ⓘ How it works</button></div>`;
+  h+=`<div class="card aHow" id="aHow" style="display:none"><ol class="aHowList"><li>DigiBook observes your learning activity.</li><li>It updates your concept mastery.</li><li>It finds your most important learning gap.</li><li>It recommends your next best action.</li><li>It updates the path after you complete activities.</li></ol></div>`;
+
+  // NEXT BEST STEP
+  h+=`<div class="card aNext"><div class="aKick"><span class="aDot"></span>Your next best step</div>
+    <div class="aNextRow">
+      <div class="aRingWrap">${aRing(rec.c.score,band)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="aConcept">${band==='Needs review'?'Strengthen':band==='Developing'?'Build':'Extend'}: ${esc(nx(rec.name))}</div>
+        <span class="aBadge ${bandCls}">${band}</span>
+        <div class="hint" style="margin-top:8px">${esc(reasons.slice(0,2).join(' · '))}. Working on it now strengthens your foundation${connect?' before '+esc(nx(connect)):''}.</div>
+        <div class="aMeta">⏱ About ${lessonMin} min</div>
+      </div>
+    </div>
+    <button class="btn aStart" id="aStart"><span aria-hidden="true">▶</span> Start now</button></div>`;
+
+  // WHY THIS STEP
+  h+=`<div class="card aWhy"><h5 class="aH5">Why DigiBook chose this</h5><ul class="aSignals">${reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>
+    <div class="aHelp">This step will help you improve quiz performance, strengthen this concept, and prepare for connected ideas.</div></div>`;
+
+  // PERSONALIZED PATH
+  h+=`<div class="card"><h5 class="aH5">Your personalized path</h5><div class="aPath">`+
+    path.map(st=>`<button class="aStep" data-type="${st.type}" data-concept="${esc(st.concept)}">
+      <span class="aStepNum">${st.n}</span>
+      <span class="aStepBody"><span class="aStepTitle">${st.type}: ${esc(nx(st.concept))}</span><span class="aStepDesc">${esc(st.desc)}</span></span>
+      <span class="aStepMeta">${st.mastery!=null?`<span class="aStepPct ${aBand(st.mastery)==='Strong'?'g':aBand(st.mastery)==='Developing'?'a':'r'}">${Math.round(st.mastery)}%</span>`:''}<span class="aStepMin">⏱${st.min}m</span></span>
+    </button>`).join('')+`</div></div>`;
+
+  // RECENT IMPROVEMENT
+  if(imp){ h+=`<div class="card aImprove"><h5 class="aH5" style="color:var(--green)">Recent improvement</h5><p class="hint" style="color:var(--ink)"><b>${esc(nx(imp.concept))}</b> mastery rose from ${imp.from}% to ${imp.to}%. Keep it up.</p></div>`; }
+
+  // WHAT HAPPENS NEXT
+  h+=`<div class="card"><h5 class="aH5">What happens next</h5><div class="aFlow">
+    <div class="aFlowItem"><span class="aFlowDot" style="background:var(--rust-soft);border-color:var(--rust)"></span><b>${esc(nx(rec.name))}</b><span>Current focus</span></div>
+    <span class="aArrow">→</span>
+    <div class="aFlowItem"><span class="aFlowDot" style="background:var(--amber-soft);border-color:var(--amber)"></span><b>${esc(nx(connect||rec.name))}</b><span>Next up</span></div>
+    <span class="aArrow">→</span>
+    <div class="aFlowItem"><span class="aFlowDot" style="background:var(--green-soft);border-color:var(--green)"></span><b>${esc(nx(apply||rec.name))}</b><span>Future connection</span></div>
+  </div></div>`;
+
+  // PATH OVERVIEW
+  h+=`<div class="card"><h5 class="aH5">Path overview</h5>
+    <div class="aBarWrap"><span class="hint">Overall mastery</span><span class="hint" style="font-weight:700;color:var(--ink)">${overall}%</span></div>
+    <div class="bar"><div class="${overall>=75?'g':overall>=50?'a':'r'}" style="width:${overall}%"></div></div>
+    <div class="aStatRow"><div><span class="aStatN" style="color:var(--green)">${strong}</span><span class="aStatL">Strong</span></div><div><span class="aStatN" style="color:var(--amber)">${needP}</span><span class="aStatL">Need practice</span></div><div><span class="aStatN">${done}</span><span class="aStatL">Activities done</span></div></div></div>`;
+
+  // HOW YOUR PATH ADAPTS
+  h+=`<div class="card"><h5 class="aH5">How your path adapts</h5><div class="aAdapt">
+    <div class="aAdaptStep"><b>You learn</b><span>Read, highlight, ask, and take quizzes.</span></div>
+    <div class="aAdaptStep"><b>We understand</b><span>DigiBook updates your model from performance and signals.</span></div>
+    <div class="aAdaptStep"><b>We recommend</b><span>It picks the action most likely to help next.</span></div>
+    <div class="aAdaptStep"><b>You improve</b><span>Mastery changes and your path updates automatically.</span></div>
+  </div></div>`;
+
+  h+=`<button class="btn ghost" id="aRecalc" style="width:100%;justify-content:center"><span aria-hidden="true">↻</span> Recalculate my path</button>`;
+
+  pad.innerHTML=h;
+  $('#aHowBtn').onclick=()=>{ const e=$('#aHow'); e.style.display=e.style.display==='none'?'block':'none'; };
+  $('#aStart').onclick=()=>startAdaptiveLesson(rec.name);
+  $('#aRecalc').onclick=()=>{ adaptiveRecalc(true); };
+  pad.querySelectorAll('.aStep').forEach(b=>b.onclick=()=>startPathStep(b.dataset.type,b.dataset.concept));
+}
+
+function adaptiveRecalc(manual){ save(); const sv=$('#sv-adaptive'); if(sv&&sv.classList.contains('active'))renderAdaptive(); if(manual)toast('Path recalculated from your latest activity'); }
+
+/* ---- Adaptive lesson ---- */
+function gotoConceptPage(concept){
+  if(!S.book||S.book.type==='pdf')return;
+  const re=new RegExp('\\b'+String(concept).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i');
+  for(let i=0;i<S.book.pages.length;i++){ if(re.test(S.book.pages[i].text||'')){ if(i!==S.page)gotoPage(i); return; } }
+}
+async function adaptiveReview(concept){
+  gotoConceptPage(concept); openTutor();
+  pushChat('user','Explain '+concept+' simply');
+  const t=typingMsg();
+  const r=await callAI(TUTOR_SYS,`Explain the concept "${concept}" simply for a student in under 90 words. Use the passage if helpful.${ctx()}`);
+  t.remove();
+  if(r){ pushChat('ai',r); aExplain(concept); }
+  else pushChat('ai',`(Tutor offline) Here is the passage for "${concept}" to review:\n\n"${clip(S.pageText,220)}"`,'offline');
+  save();
+}
+function targetedFallbackQuiz(concept){
+  const cre=new RegExp('\\b'+String(concept).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i');
+  const sents=offlineSentences(S.pageText).filter(s=>cre.test(s));
+  const terms=offlineKeyTerms(S.pageText);
+  const out=[]; const used=new Set();
+  for(const s of sents){ if(out.length>=3)break;
+    const blanked=s.replace(cre,'_____');
+    const distr=pickDistractors(concept, terms.filter(x=>x.toLowerCase()!==String(concept).toLowerCase()),3);
+    const options=shuffle([concept,...distr]);
+    out.push({q:'Fill in the blank: "'+blanked+'"',options,answer:options.indexOf(concept),explain:'The passage uses "'+concept+'" here.',concept});
+  }
+  return out.length?out:null;
+}
+async function generateTargetedQuiz(concept){
+  const pad=$('#quizPad'); switchTab('quiz');
+  if(!S.book){pad.innerHTML='<div class="card"><p class="hint">Open a lesson first.</p></div>';return;}
+  pad.innerHTML=`<div class="card"><p class="hint">Building targeted questions on <b>${esc(cap(String(concept).toLowerCase()))}</b>… <span class="spin"></span></p></div>`;
+  const sys=`You write short, fair comprehension quizzes for students. Output ONLY valid JSON.`;
+  const usr=`Write 3 multiple-choice questions that specifically test the concept "${concept}" using the passage below. Each: "q", "options" (exactly 4 strings), "answer" (0-3), "explain" (one sentence), "concept" (set to "${concept}"). Return ONLY a JSON array.\n\nPassage:\n"""${S.pageText.slice(0,2200)}"""`;
+  let quiz=await callAIJSON(sys,usr); let usedAI=Array.isArray(quiz)&&quiz.length>0;
+  if(!usedAI){ quiz=targetedFallbackQuiz(concept)||fallbackQuiz(); }
+  quiz=(quiz||[]).filter(q=>q&&q.q&&Array.isArray(q.options)&&q.options.length===4).map(q=>({...q,concept:concept}));
+  if(!quiz.length){ pad.innerHTML='<div class="card"><p class="hint">Not enough text on this page to build targeted questions. Open the page where this concept is introduced, then try again.</p></div>'; return; }
+  S.quiz={items:quiz,answers:new Array(quiz.length).fill(null),done:false,offline:!usedAI,focus:[concept],adaptiveConcept:concept};
+  renderQuiz();
+}
+async function startAdaptiveLesson(concept){
+  toast('Adaptive lesson: '+cap(String(concept).toLowerCase()));
+  await adaptiveReview(concept);
+  await generateTargetedQuiz(concept);
+}
+function startPathStep(type,concept){
+  if(type==='Practice'||type==='Apply') generateTargetedQuiz(concept);
+  else adaptiveReview(concept);
+}
+
+
+/* ============ Wire up UI ============ */
+$('#pickBtn').onclick=()=>$('#fileInput').click();
+$('#fileInput').onchange=e=>{ if(e.target.files[0])openFile(e.target.files[0]); };
+$('#demoBtn').onclick=(e)=>{ e.stopPropagation(); toggleDemoMenu(); };
+$('#playDemo').onclick=()=>loadDemo(DEFAULT_DEMO);
+document.addEventListener('mousedown',e=>{ if(!closestOf(e.target,'#demoMenu')&&!closestOf(e.target,'#demoBtn'))closeDemoMenu(); });
+const dz=$('#dropzone');
+['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));
+dz.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f)openFile(f); });
+
+$('#homeBtn').onclick=goLibrary;
+$('#homeBrand').onclick=goLibrary;
+$('#exitReadBtn').onclick=goLibrary;
+$('#prevBtn').onclick=()=>gotoPage(S.page-1);
+$('#nextBtn').onclick=()=>gotoPage(S.page+1);
+$('#bmBtn').onclick=toggleBookmark;
+$('#hlModeBtn').onclick=toggleHLMode;
+$('#quizPageBtn').onclick=generateQuiz;
+$('#buildGraphBtn').onclick=buildGraph;
+
+/* About now lives in its own panel tab. */
+$('#aboutLink').onclick=openHowItWorks;
+$('#aboutClose').onclick=closeHowItWorks;
+$('#aboutStart').onclick=closeHowItWorks;
+$('#aboutOverlay').addEventListener('click',e=>{ if(e.target.id==='aboutOverlay')closeHowItWorks(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeHowItWorks(); });
+
+$$('#panelTabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+$$('#progressSub button').forEach(b=>b.onclick=()=>progressSub(b.dataset.sub));
+$('#chatSend').onclick=sendChat;
+$('#chatInput').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} });
+$('#chatInput').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(110,e.target.scrollHeight)+'px';});
+$('#modeSocratic').onclick=()=>{S.socratic=true;$('#modeSocratic').classList.add('on');$('#modeDirect').classList.remove('on');};
+$('#modeDirect').onclick=()=>{S.socratic=false;$('#modeDirect').classList.add('on');$('#modeSocratic').classList.remove('on');};
+
+$('#themeBtn').onclick=()=>{ const b=document.body; b.dataset.theme=b.dataset.theme==='dark'?'light':'dark';
+  localStorage.setItem(LS+'_theme',b.dataset.theme); if(S.graph)renderGraph(); };
+let readFS=19;
+$('#fsPlus').onclick=()=>{readFS=Math.min(30,readFS+1);document.documentElement.style.setProperty('--readfs',readFS+'px');};
+$('#fsMinus').onclick=()=>{readFS=Math.max(14,readFS-1);document.documentElement.style.setProperty('--readfs',readFS+'px');};
+
+/* ============ Init ============ */
+(function init(){
+  const th=localStorage.getItem(LS+'_theme'); if(th)document.body.dataset.theme=th;
+  load(); renderChat(); renderModel(); renderShelf(); renderDemoLibrary(); renderAbout(); updateStats(); renderCards(); renderGraph();
+  // ping AI proxy quietly to set pill
+  callAI(TUTOR_SYS,'Reply with the single word: ready').then(r=>{ setAI(!!r); });
+  document.documentElement.style.setProperty('--readfs',readFS+'px');
+})();
+</script>
+</body>
+</html>
