@@ -444,6 +444,7 @@ body.acx-contrast .card,body.acx-contrast .iconbtn,body.acx-contrast .qOpt,body.
 body.acx-contrast .btn.ghost{border:2px solid #0b3d91}
 body.acx-contrast *:focus-visible{outline:3px solid #0b3d91 !important;outline-offset:2px}
 body.acx-contrast .brandAI{color:#8a5300}
+[data-theme="sepia"] .brandAI{color:#A66512}
 body.acx-contrast .pill.demo{color:#ffffff}
 /* ---- Large text ---- */
 body.acx-text-large .msg,body.acx-text-large .qOpt,body.acx-text-large .hint,body.acx-text-large .aStepTitle{font-size:14.5px}
@@ -465,6 +466,21 @@ body.acx-easy .iconbtn[data-label] .hlbl{display:none}
 body.acx-motion *,body.acx-motion *::before,body.acx-motion *::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
 body.acx-motion #micBtn.listening{animation:none}
 @media(max-width:560px){ #acxCard{padding:20px 16px} #raBar{gap:6px;padding:6px 10px} }
+
+/* ---------- Reading spacing + ruler ---------- */
+body.acx-space-comfortable #textPage{letter-spacing:.03em;word-spacing:.05em;line-height:1.9}
+body.acx-space-spacious #textPage{letter-spacing:.06em;word-spacing:.12em;line-height:2.2}
+body.acx-ruler #textPage p,body.acx-ruler #textPage h2{transition:opacity .12s;opacity:.32}
+body.acx-ruler #textPage p.ruler-focus,body.acx-ruler #textPage h2.ruler-focus,body.acx-ruler #textPage .ra-current{opacity:1}
+body.acx-motion #textPage p,body.acx-motion #textPage h2{transition:none}
+
+/* ---------- Sepia reading theme ---------- */
+[data-theme="sepia"]{--paper:#F1E7CE;--page:#F8F0DA;--ink:#3F3323;--ink-soft:#665844;--line:#DED0AE;--blue:#2F5E7E;--blue-soft:#E4EAEE;--hl:#E6BE43;--hl-soft:#F5E9C2;--green:#3E7C59;--green-soft:#E4EFE4;--amber:#9A6A1E;--amber-soft:#F2E6CB;--rust:#A94733;--rust-soft:#F3DED7;--shadow:0 2px 10px rgba(63,51,35,.12)}
+/* ---------- Keyboard shortcuts list + wrapping ---------- */
+.acxRow{flex-wrap:wrap}
+.acxKeysList{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:12.5px}
+.acxKeysList dt{font-weight:700;color:var(--ink);white-space:nowrap}
+.acxKeysList dd{margin:0;color:var(--ink-soft)}
 </style>
 </head>
 <body data-theme="light">
@@ -688,7 +704,7 @@ const S = {
   bookmarks:{}, highlights:{},
   adaptive:{signals:{},improvements:[],completed:[]},
   srs:{},
-  acx:{readAloud:false,autoReadTutor:false,speechRate:1,highContrast:false,textSize:'default',easyInteraction:false,voiceCommands:false,reduceMotion:false},
+  acx:{readAloud:false,autoReadTutor:false,speechRate:1,highContrast:false,textSize:'default',spacing:'default',easyFont:false,readingRuler:false,easyInteraction:false,voiceCommands:false,reduceMotion:false},
   mapView:'graph',
   level:'standard',
   aiOK:false,
@@ -2105,7 +2121,7 @@ function startPathStep(type,concept){
 
 /* ============ Accessibility / difficulty ============ */
 function levelPhrase(){ return S.level==='simple'?'Use very simple language a 5th grader could follow, with a concrete everyday example.':S.level==='advanced'?'Use precise, college-level language with appropriate nuance.':'Use clear language a middle-school student could follow.'; }
-function toggleReadFont(){ const on=document.body.dataset.read!=='easy'; document.body.dataset.read=on?'easy':''; localStorage.setItem(LS+'_read',on?'easy':''); const b=$('#readFontBtn'); if(b){ b.setAttribute('aria-pressed',on?'true':'false'); b.style.background=on?'var(--hl)':''; b.style.color=on?'#22303F':''; } toast(on?'Easy-reading font on':'Easy-reading font off'); }
+function toggleReadFont(){ S.acx.easyFont=!S.acx.easyFont; localStorage.setItem(LS+'_read',S.acx.easyFont?'easy':''); acxSave(); applyAcx(); toast(S.acx.easyFont?'Easy-reading font on':'Easy-reading font off'); }
 
 /* ============ Export / Import / Report ============ */
 function downloadBlob(name,type,data){ try{ const bl=new Blob([data],{type}); const u=URL.createObjectURL(bl); const a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1500);}catch(e){ toast('Download failed'); } }
@@ -2186,7 +2202,7 @@ const TTS_OK = !!TTS && (typeof SpeechSynthesisUtterance!=='undefined');
 const SR_CLASS = (typeof window!=='undefined') ? (window.SpeechRecognition||window.webkitSpeechRecognition) : null;
 const SR_OK = !!SR_CLASS;
 
-function acxLoad(){ try{ const d=JSON.parse(localStorage.getItem(LS+'_acx')||'null'); if(d)Object.assign(S.acx,d);}catch(e){} }
+function acxLoad(){ try{ const d=JSON.parse(localStorage.getItem(LS+'_acx')||'null'); if(d)Object.assign(S.acx,d);}catch(e){} if(localStorage.getItem(LS+'_read')==='easy')S.acx.easyFont=true; }
 function acxSave(){ try{ localStorage.setItem(LS+'_acx',JSON.stringify(S.acx)); }catch(e){} }
 // Screen-reader announcements via visually-hidden live regions.
 function announce(msg,assertive){ const el=$(assertive?'#acxLiveAssertive':'#acxLive'); if(!el)return; el.textContent=''; setTimeout(()=>{ el.textContent=String(msg||''); },40); }
@@ -2198,6 +2214,10 @@ function applyAcx(){
   document.body.classList.toggle('acx-motion',!!a.reduceMotion);
   document.body.classList.toggle('acx-text-large',a.textSize==='large');
   document.body.classList.toggle('acx-text-xlarge',a.textSize==='xlarge');
+  const ef=!!a.easyFont; document.body.dataset.read=ef?'easy':''; const _rb=$('#readFontBtn'); if(_rb){ _rb.setAttribute('aria-pressed',ef?'true':'false'); _rb.style.background=ef?'var(--hl)':''; _rb.style.color=ef?'#22303F':''; }
+  document.body.classList.toggle('acx-ruler',!!a.readingRuler);
+  document.body.classList.toggle('acx-space-comfortable',a.spacing==='comfortable');
+  document.body.classList.toggle('acx-space-spacious',a.spacing==='spacious');
   readFS = a.textSize==='xlarge'?26:a.textSize==='large'?23:19;
   document.documentElement.style.setProperty('--readfs',readFS+'px');
   const bar=$('#raBar'); if(bar) bar.style.display=(a.readAloud && S.book && $('#reader').style.display!=='none')?'flex':'none';
@@ -2214,18 +2234,38 @@ function acxSwitch(key,label,disabled,note){
 }
 function renderAcxPanel(){
   const pad=$('#acxBody'); if(!pad)return;
-  const ts=S.acx.textSize;
+  const ts=S.acx.textSize, sp=S.acx.spacing, th=document.body.dataset.theme||'light', lv=S.level||'standard';
   pad.innerHTML=`
     <h2 class="aboutH">Vision &amp; Reading</h2>
     ${acxSwitch('readAloud','Read aloud',!TTS_OK,TTS_OK?'Hear the page, tutor answers, quizzes and recommendations':'Not available in this browser')}
     ${acxSwitch('autoReadTutor','Automatically read tutor responses',!TTS_OK,'Off by default')}
     <div class="acxRow"><span class="acxRowText"><span class="acxLabel">Text size</span></span>
-      <span class="acxSeg" role="group" aria-label="Text size">
+      <span class="acxSeg acxTextSeg" role="group" aria-label="Text size">
         <button data-ts="default" class="${ts==='default'?'on':''}" aria-pressed="${ts==='default'}">Default</button>
         <button data-ts="large" class="${ts==='large'?'on':''}" aria-pressed="${ts==='large'}">Large</button>
         <button data-ts="xlarge" class="${ts==='xlarge'?'on':''}" aria-pressed="${ts==='xlarge'}">Extra large</button>
       </span></div>
+    <div class="acxRow"><span class="acxRowText"><span class="acxLabel">Reading spacing</span><span class="acxNote">Extra letter and line spacing</span></span>
+      <span class="acxSeg acxSpace" role="group" aria-label="Reading spacing">
+        <button data-sp="default" class="${sp==='default'?'on':''}" aria-pressed="${sp==='default'}">Default</button>
+        <button data-sp="comfortable" class="${sp==='comfortable'?'on':''}" aria-pressed="${sp==='comfortable'}">Comfortable</button>
+        <button data-sp="spacious" class="${sp==='spacious'?'on':''}" aria-pressed="${sp==='spacious'}">Spacious</button>
+      </span></div>
+    ${acxSwitch('easyFont','Easy-reading font',false,'Dyslexia-friendly font for the document')}
+    ${acxSwitch('readingRuler','Reading ruler',false,'Dim all but the line you point at')}
     ${acxSwitch('highContrast','High contrast')}
+    <div class="acxRow"><span class="acxRowText"><span class="acxLabel">Reading theme</span><span class="acxNote">Sepia is warmer and lower blue light</span></span>
+      <span class="acxSeg acxTheme" role="group" aria-label="Reading theme">
+        <button data-th="light" class="${th==='light'?'on':''}" aria-pressed="${th==='light'}">Light</button>
+        <button data-th="sepia" class="${th==='sepia'?'on':''}" aria-pressed="${th==='sepia'}">Sepia</button>
+        <button data-th="dark" class="${th==='dark'?'on':''}" aria-pressed="${th==='dark'}">Dark</button>
+      </span></div>
+    <div class="acxRow"><span class="acxRowText"><span class="acxLabel">Explanation level</span><span class="acxNote">How simply the AI tutor explains</span></span>
+      <span class="acxSeg acxLevel" role="group" aria-label="Explanation level">
+        <button data-lv="simple" class="${lv==='simple'?'on':''}" aria-pressed="${lv==='simple'}">Simple</button>
+        <button data-lv="standard" class="${lv==='standard'?'on':''}" aria-pressed="${lv==='standard'}">Standard</button>
+        <button data-lv="advanced" class="${lv==='advanced'?'on':''}" aria-pressed="${lv==='advanced'}">Advanced</button>
+      </span></div>
     <h2 class="aboutH">Motor &amp; Mobility</h2>
     ${acxSwitch('easyInteraction','Easy interaction mode',false,'Bigger buttons, more spacing, clearer labels')}
     ${acxSwitch('voiceCommands','Voice commands',!SR_OK,SR_OK?'Navigate and answer by speaking':'Not available in this browser')}
@@ -2234,6 +2274,7 @@ function renderAcxPanel(){
     ${acxSwitch('reduceMotion','Reduce motion')}
     <div class="acxActions">
       <button class="btn ghost" id="acxGuideBtn" style="padding:8px 12px;font-size:12px" aria-expanded="false" aria-controls="acxGuide">Accessibility guide</button>
+      <button class="btn ghost" id="acxKeysBtn" style="padding:8px 12px;font-size:12px" aria-expanded="false" aria-controls="acxKeys">Keyboard shortcuts</button>
       <button class="btn ghost" id="acxReset" style="padding:8px 12px;font-size:12px">Reset accessibility settings</button>
     </div>
     <div id="acxGuide" class="acxGuide" hidden>
@@ -2241,13 +2282,27 @@ function renderAcxPanel(){
       <p class="hint"><b>Read aloud:</b> turn it on, then use the reader's play bar, or select text first to hear only that. Each tutor answer gets a speaker button.</p>
       <p class="hint"><b>Voice:</b> the tutor has an "Ask by voice" mic. With Voice commands on, say phrases like "Open quiz", "Read page", "Next page", or "Answer A".</p>
       <p class="hint"><b>Screen readers:</b> DigiBook announces page changes, quiz feedback and path updates, and the Concept Map offers an Outline view.</p>
+    </div>
+    <div id="acxKeys" class="acxGuide" hidden>
+      <dl class="acxKeysList">
+        <dt>Tab / Shift + Tab</dt><dd>Move between controls</dd>
+        <dt>Enter or Space</dt><dd>Activate the focused control</dd>
+        <dt>Left / Right arrow</dt><dd>Previous / next document page</dd>
+        <dt>Esc</dt><dd>Close a menu or dialog</dd>
+        <dt>Tab at the top of the page</dt><dd>Reveal skip links to the document or the tools</dd>
+      </dl>
+      <p class="hint">With Voice commands on, you can also say phrases like "Open quiz", "Read page", "Next page", or "Answer A".</p>
     </div>`;
   pad.querySelectorAll('.acxToggle').forEach(b=>{ if(b.disabled)return; b.onclick=()=>{ const k=b.dataset.key; S.acx[k]=!S.acx[k]; acxSave(); applyAcx(); renderAcxPanel(); const names={readAloud:'Read aloud',autoReadTutor:'Auto read tutor responses',highContrast:'High contrast',easyInteraction:'Easy interaction mode',voiceCommands:'Voice commands',reduceMotion:'Reduce motion'}; toast((names[k]||'Setting')+' '+(S.acx[k]?'on':'off')); announce((names[k]||'Setting')+' '+(S.acx[k]?'enabled':'disabled')); }; });
-  pad.querySelectorAll('.acxSeg button').forEach(b=>{ b.onclick=()=>{ S.acx.textSize=b.dataset.ts; acxSave(); applyAcx(); renderAcxPanel(); announce('Text size '+b.dataset.ts.replace('xlarge','extra large')); }; });
+  pad.querySelectorAll('.acxTextSeg button').forEach(b=>{ b.onclick=()=>{ S.acx.textSize=b.dataset.ts; acxSave(); applyAcx(); renderAcxPanel(); announce('Text size '+b.dataset.ts.replace('xlarge','extra large')); }; });
+  pad.querySelectorAll('.acxSpace button').forEach(b=>{ b.onclick=()=>{ S.acx.spacing=b.dataset.sp; acxSave(); applyAcx(); renderAcxPanel(); announce('Reading spacing '+b.dataset.sp); }; });
+  pad.querySelectorAll('.acxTheme button').forEach(b=>{ b.onclick=()=>{ document.body.dataset.theme=b.dataset.th; localStorage.setItem(LS+'_theme',b.dataset.th); if(S.graph)renderGraph(); renderAcxPanel(); announce('Reading theme '+b.dataset.th); }; });
+  pad.querySelectorAll('.acxLevel button').forEach(b=>{ b.onclick=()=>{ S.level=b.dataset.lv; localStorage.setItem(LS+'_level',S.level); const ls=$('#levelSel'); if(ls)ls.value=S.level; renderAcxPanel(); announce('Explanation level '+S.level); }; });
+  const kb=$('#acxKeysBtn'); if(kb)kb.onclick=()=>{ const el=$('#acxKeys'); const hid=el.hasAttribute('hidden'); if(hid){el.removeAttribute('hidden');kb.setAttribute('aria-expanded','true');}else{el.setAttribute('hidden','');kb.setAttribute('aria-expanded','false');} };
   const g=$('#acxGuideBtn'); if(g)g.onclick=()=>{ const el=$('#acxGuide'); const hidden=el.hasAttribute('hidden'); if(hidden){el.removeAttribute('hidden');g.setAttribute('aria-expanded','true');}else{el.setAttribute('hidden','');g.setAttribute('aria-expanded','false');} };
   const r=$('#acxReset'); if(r)r.onclick=acxReset;
 }
-function acxReset(){ S.acx={readAloud:false,autoReadTutor:false,speechRate:1,highContrast:false,textSize:'default',easyInteraction:false,voiceCommands:false,reduceMotion:false}; acxSave(); applyAcx(); renderAcxPanel(); toast('Accessibility settings reset'); announce('Accessibility settings reset'); }
+function acxReset(){ S.acx={readAloud:false,autoReadTutor:false,speechRate:1,highContrast:false,textSize:'default',spacing:'default',easyFont:false,readingRuler:false,easyInteraction:false,voiceCommands:false,reduceMotion:false}; localStorage.setItem(LS+'_read',''); acxSave(); applyAcx(); renderAcxPanel(); toast('Accessibility settings reset'); announce('Accessibility settings reset'); }
 function openAcx(){ renderAcxPanel(); const o=$('#acxOverlay'); o.classList.add('open'); o.setAttribute('aria-hidden','false'); const c=$('#acxClose'); if(c)setTimeout(()=>c.focus(),30); }
 function closeAcx(){ const o=$('#acxOverlay'); o.classList.remove('open'); o.setAttribute('aria-hidden','true'); const b=$('#acxBtn'); if(b)b.focus(); }
 
@@ -2377,6 +2432,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeAcx(); });
 $('#micBtn').onclick=toggleDictation;
 $('#raPlay').onclick=raToggle; $('#raPrev').onclick=raPrev; $('#raNext').onclick=raNext; $('#raStop').onclick=raStop; $('#raSpeed').onchange=e=>raSetSpeed(e.target.value);
 $$('#mapViewSeg button').forEach(b=>b.onclick=()=>setMapView(b.dataset.mv));
+document.addEventListener('mousemove',e=>{ if(!S.acx||!S.acx.readingRuler)return; const tp=$('#textPage'); if(!tp||tp.style.display==='none')return; const el=e.target&&e.target.closest?e.target.closest('#textPage p, #textPage h2'):null; tp.querySelectorAll('.ruler-focus').forEach(x=>x.classList.remove('ruler-focus')); if(el)el.classList.add('ruler-focus'); });
 $('#prevBtn').onclick=()=>gotoPage(S.page-1);
 $('#nextBtn').onclick=()=>gotoPage(S.page+1);
 $('#bmBtn').onclick=toggleBookmark;
