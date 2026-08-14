@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DigiBook — The textbook that understands how you learn</title>
+<title>DigiBook - The textbook that understands how you learn</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%277%27%20fill%3D%27%2314306B%27/%3E%3Cpath%20d%3D%27M16%209c-3-1.6-6-1.6-9%200v14c3-1.6%206-1.6%209%200c3-1.6%206-1.6%209%200V9c-3-1.6-6-1.6-9%200z%27%20fill%3D%27%23FDFBF5%27/%3E%3Cpath%20d%3D%27M16%209v14%27%20stroke%3D%27%23F2A900%27%20stroke-width%3D%271.8%27/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Space+Grotesk:wght@400;500;600;700&family=Baloo+2:wght@600;700;800&family=Lexend:wght@400;500;600&display=swap" rel="stylesheet">
@@ -265,6 +265,9 @@ select.ctl{font-family:inherit;font-size:12px;padding:6px 8px;border:1px solid v
 #progressSub{display:flex;gap:6px;padding:11px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap;flex-shrink:0}
 #progressSub button{font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:99px;border:1px solid var(--line);color:var(--ink-soft);background:var(--paper)}
 #progressSub button.active{background:var(--hl);color:#22303F;border-color:transparent}
+.subShort{display:none}
+@media(max-width:560px){ .subFull{display:none} .subShort{display:inline} }
+@media(max-width:560px){ #srBar,#readerBar,#raBar,.nbActions,.srComposeRow,.srRow,.srBtns{flex-wrap:wrap} .panelView,.pv-pad,#srContent,#nbContent{max-width:100%;overflow-x:hidden} .srCode{font-size:22px;letter-spacing:3px} .srCard{max-width:100%} #nbCanvasBox{min-height:180px} .nbActions .btn,.srComposeRow .btn{flex:1 1 auto} }
 .subView{display:none;flex:1;min-height:0;overflow-y:auto}
 .subView.active{display:flex;flex-direction:column}
 #sv-map{overflow:hidden}
@@ -374,7 +377,8 @@ body[data-read="easy"] .msg,body[data-read="easy"] .fcFace{font-family:'Lexend',
 
 
 /* ---------- Accessibility fixes ---------- */
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);border:0}
+html{overflow-x:hidden}
 .aBadge.a,.aStepPct.a{color:#8a5a12} .aBadge.r,.aStepPct.r{color:#8f3d2b} .aBadge.g,.aStepPct.g{color:#2f6045}
 #shelf h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-soft);margin-bottom:10px}
 .shelfHead h2{margin-bottom:0}
@@ -832,7 +836,7 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
         <button data-sub="map">Concept Map</button>
         <button data-sub="cards">Cards</button>
         <button data-sub="stats">Stats</button>
-        <button data-sub="adaptive">Adaptive Path</button>
+        <button data-sub="adaptive"><span class="subFull">Adaptive Learning Path</span><span class="subShort">Adaptive Path</span></button>
       </div>
       <div class="subView active" id="sv-mastery"><div class="pv-pad" id="modelPad"></div></div>
       <div class="subView" id="sv-cards"><div class="pv-pad" id="cardsPad"></div></div>
@@ -850,7 +854,7 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
         </div>
         <div class="legend" style="padding:0 16px 14px">
           <span><i style="background:var(--green)"></i>Strong (≥75%)</span>
-          <span><i style="background:var(--amber)"></i>Developing (50–74%)</span>
+          <span><i style="background:var(--amber)"></i>Developing (50-74%)</span>
           <span><i style="background:var(--rust)"></i>Needs review (&lt;50%)</span>
           <span><i style="background:var(--ink-soft)"></i>Not assessed</span>
         </div></div>
@@ -931,8 +935,8 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
 var PDF_OK = (typeof pdfjsLib !== 'undefined');
 var DOCX_OK = (typeof mammoth !== 'undefined');
 if(PDF_OK){ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
-else { console.warn('pdf.js failed to load — PDF reading disabled, rest of app works.'); }
-if(!DOCX_OK){ console.warn('mammoth failed to load — DOCX reading disabled.'); }
+else { console.warn('pdf.js failed to load - PDF reading disabled, rest of app works.'); }
+if(!DOCX_OK){ console.warn('mammoth failed to load - DOCX reading disabled.'); }
 
 /* ============ State ============ */
 const S = {
@@ -1280,10 +1284,10 @@ async function openFile(file){
   const name=file.name, ext=name.split('.').pop().toLowerCase();
   toast('Reading '+name+'…');
   if(ext==='pdf'){
-    if(!PDF_OK){toast('PDF engine didn\'t load — check your connection and refresh');return;}
+    if(!PDF_OK){toast('PDF engine didn\'t load - check your connection and refresh');return;}
     const buf=await file.arrayBuffer(); await loadPDF(buf,name); }
   else if(ext==='docx'){
-    if(!DOCX_OK){toast('DOCX engine didn\'t load — try a PDF or TXT, or refresh');return;}
+    if(!DOCX_OK){toast('DOCX engine didn\'t load - try a PDF or TXT, or refresh');return;}
     const buf=await file.arrayBuffer();
     const res=await mammoth.extractRawText({arrayBuffer:buf});
     loadText(splitPages(res.value),name.replace(/\.docx$/i,''),'docx'); }
@@ -1315,7 +1319,7 @@ function addToShelf(){
   let sh=JSON.parse(localStorage.getItem(LS+'_shelf')||'[]');
   sh=sh.filter(x=>x.title!==S.book.title);
   // Text-based books (sample, txt, docx) store their extracted pages so they can
-  // reopen instantly. PDFs can't be stored (too large / binary) — re-upload only.
+  // reopen instantly. PDFs can't be stored (too large / binary) - re-upload only.
   const reopenable = S.book.type!=='pdf';
   const entry={title:S.book.title,type:S.book.type,when:Date.now(),reopenable};
   if(S.book.demoId)entry.demoId=S.book.demoId;
@@ -1345,8 +1349,8 @@ function reopenShelfItem(idx){
     loadText(x.pages, x.title, x.type==='pdf'?'text':x.type);
     addToShelf(); // refresh recency
   } else {
-    // can't restore content — open the file picker so the user re-uploads
-    toast('This file is too large to save — please pick it again');
+    // can't restore content - open the file picker so the user re-uploads
+    toast('This file is too large to save - please pick it again');
     $('#fileInput').click();
   }
 }
@@ -1508,7 +1512,7 @@ function handleSel(e){
 document.addEventListener('mousedown',e=>{ if(!closestOf(e.target,'#selPop'))pop.style.display='none'; });
 
 /* ============ AI actions ============ */
-function ctx(){ return S.pageText? `\n\nContext — the passage the student is currently reading:\n"""${S.pageText.slice(0,1800)}"""`:''; }
+function ctx(){ return S.pageText? `\n\nContext - the passage the student is currently reading:\n"""${S.pageText.slice(0,1800)}"""`:''; }
 const TUTOR_SYS=`You are the DigiBook tutor, a warm, encouraging teacher for students and lifelong learners. Keep answers clear and concise. Never mention which AI model or company powers you; you are simply "the DigiBook tutor." Use plain language and concrete examples.`;
 
 function pushChat(role,content,src){ S.chat.push({role,content,src}); renderChat(); if(role==='ai' && S.acx && S.acx.readAloud && S.acx.autoReadTutor) raSpeakOnce(content); }
@@ -1547,12 +1551,12 @@ async function explainInline(x,kind){
   if(r){pushChat('ai',r);noteConceptFromText(x);aTrackText(x,'explain');}
   else pushChat('ai',offlineExplain(x,kind),'offline');
 }
-async function askAbout(x){ openTutor(); $('#chatInput').value='About this part: "'+clip(x,90)+'" — '; $('#chatInput').focus(); }
+async function askAbout(x){ openTutor(); $('#chatInput').value='About this part: "'+clip(x,90)+'" - '; $('#chatInput').focus(); }
 
 function clip(s,n=60){s=s.replace(/\s+/g,' ').trim();return s.length>n?s.slice(0,n)+'…':s}
 
 /* offline fallbacks (honest, minimal) */
-function offlineDefine(w){return `(Tutor offline) I can't fetch a live definition right now. "${w}" appears in your reading — try selecting the sentence around it and using “Explain simply” once the tutor reconnects, or check a dictionary.`}
+function offlineDefine(w){return `(Tutor offline) I can't fetch a live definition right now. "${w}" appears in your reading - try selecting the sentence around it and using “Explain simply” once the tutor reconnects, or check a dictionary.`}
 function offlineExplain(x,kind){return `(Tutor offline) The AI tutor isn't connected, so I can't ${kind==='summary'?'summarize':'explain'} this live. Here's the passage you selected so you can re-read it:\n\n"${clip(x,220)}"`}
 
 /* ============ Chat / Socratic tutor ============ */
@@ -1565,7 +1569,7 @@ function renderChat(){
   const canRead=(S.acx && S.acx.readAloud && TTS_OK);
   log.innerHTML=S.chat.map((m,i)=>{
     if(m.role==='sys')return `<div class="msg sys">${esc(m.content)}</div>`;
-    const src=m.src==='offline'?`<span class="src">tutor offline — reconnect for a live answer</span>`:'';
+    const src=m.src==='offline'?`<span class="src">tutor offline - reconnect for a live answer</span>`:'';
     const rd=(m.role==='ai'&&canRead)?`<button class="msgRead" data-i="${i}" aria-label="Read this response aloud"><span aria-hidden="true">🔊</span> Read</button>`:'';
     return `<div class="msg ${m.role==='user'?'user':'ai'}">${esc(m.content)}${src}${rd}</div>`;
   }).join('');
@@ -1587,7 +1591,7 @@ async function sendChat(){
   const history=S.chat.slice(-8).filter(m=>m.role!=='sys').map(m=>`${m.role==='user'?'Student':'Tutor'}: ${m.content}`).join('\n');
   let sys=TUTOR_SYS;
   if(S.socratic){
-    sys+=` IMPORTANT: Use the Socratic method. Instead of immediately giving the full answer, guide the student with one focused question at a time that leads them to reason it out. Only give a direct answer if the student is clearly stuck after trying, or explicitly asks you to just tell them. Keep each turn short (1–3 sentences).`;
+    sys+=` IMPORTANT: Use the Socratic method. Instead of immediately giving the full answer, guide the student with one focused question at a time that leads them to reason it out. Only give a direct answer if the student is clearly stuck after trying, or explicitly asks you to just tell them. Keep each turn short (1-3 sentences).`;
   }else{
     sys+=` Answer the student's question clearly and directly, with a brief example. Keep it concise.`;
   }
@@ -1596,7 +1600,7 @@ async function sendChat(){
   const r=await callAI(sys,usr);
   t.remove();
   if(r){ pushChat('ai',r); noteConceptFromText(q); aTrackText(q,'tutor'); announce('AI tutor response ready.'); }
-  else pushChat('ai',`(Tutor offline) I can't reach the AI tutor right now, so I can't respond live. Your question is saved above — try again once the connection is back.`,'offline');
+  else pushChat('ai',`(Tutor offline) I can't reach the AI tutor right now, so I can't respond live. Your question is saved above - try again once the connection is back.`,'offline');
 }
 
 /* ============ Concept tracking / Open Student Model ============ */
@@ -1620,7 +1624,7 @@ function bumpConcept(name,delta){
   save(); renderModel(); renderGraph();
 }
 function assessedConcepts(){ return Object.entries(S.concepts).filter(([_,c])=>c.score!=null).sort((a,b)=>a[1].score-b[1].score); }
-// Weakest assessed concepts (below mastery), lowest score first — drives the adaptive quiz.
+// Weakest assessed concepts (below mastery), lowest score first - drives the adaptive quiz.
 function weakConcepts(n){ return assessedConcepts().filter(([_,c])=>c.score<75).slice(0,n).map(([name])=>name); }
 function scoreClass(v){ return v>=75?'g':v>=50?'a':'r'; }
 
@@ -1628,7 +1632,7 @@ function renderModel(){
   const pad=$('#modelPad');
   const assessed=assessedConcepts();
   const seenOnly=Object.entries(S.concepts).filter(([_,c])=>c.score==null).sort((a,b)=>b[1].seen-a[1].seen).slice(0,8);
-  let html=`<div class="card"><h4>Open Student Model</h4><p class="hint">This is <b>your</b> model — it's meant to be visible. Scores rise when you answer quizzes correctly and fall on misses. Concepts you've only encountered appear below as “seen.”</p></div>`;
+  let html=`<div class="card"><h4>Open Student Model</h4><p class="hint">This is <b>your</b> model - it's meant to be visible. Scores rise when you answer quizzes correctly and fall on misses. Concepts you've only encountered appear below as “seen.”</p></div>`;
   if(assessed.length){
     html+='<div class="card"><h4>Assessed concepts</h4>';
     assessed.forEach(([name,c])=>{
@@ -1650,7 +1654,7 @@ function renderModel(){
 function renderQuizIdle(){
   const pad=$('#quizPad'); if(!pad)return;
   if(!S.book){
-    pad.innerHTML=`<div class="card"><h4>Quiz</h4><p class="hint">Open a lesson and DigiBook will build a short quiz from what you're reading. Your results feed your mastery model and the Adaptive Path.</p></div>`;
+    pad.innerHTML=`<div class="card"><h4>Quiz</h4><p class="hint">Open a lesson and DigiBook will build a short quiz from what you're reading. Your results feed your mastery model and the Adaptive Learning Path.</p></div>`;
   } else {
     const focused=aAssessed().length?", focused on the concepts you're still building":"";
     pad.innerHTML=`<div class="card"><h4>Quiz</h4><p class="hint">Ready when you are. DigiBook will generate a short quiz from this page${focused}, then use your answers to update your mastery.</p><button class="btn" id="qGen" style="margin-top:12px">Quiz me on this page</button><p class="hint" style="margin-top:9px">Tip: you can also press <b>Quiz me on this</b> in the reader toolbar.</p></div>`;
@@ -1663,7 +1667,7 @@ async function generateQuiz(){
   pad.innerHTML='<div class="card"><p class="hint">Building a quiz from this page… <span class="spin"></span></p></div>';
   const sys=`You write short, fair comprehension quizzes for students. Output ONLY valid JSON.`;
   // Adaptive: fold the student's weakest concepts into the prompt so the quiz
-  // prioritizes what they haven't mastered yet — closing the student-model loop.
+  // prioritizes what they haven't mastered yet - closing the student-model loop.
   const focusList=weakConcepts(5);
   const focus=focusList.length
     ? `\n\nThe student is still building these concepts (weakest first): ${focusList.join(', ')}. If any appear in the passage, prioritize testing them and name the matching "concept" exactly.`
@@ -1783,7 +1787,7 @@ function renderQuizResult(){
   const pad=$('#quizPad'),Q=S.quiz;
   const pct=Math.round(Q.correct/Q.items.length*100);
   let html=`<div class="card"><div class="scoreBig">${Q.correct}/${Q.items.length}</div>
-    <p class="hint" style="text-align:center">${pct>=75?'Strong work — those concepts moved up in your model.':pct>=50?'Getting there — the weaker concepts are flagged for review.':'These concepts need another pass. Try the tutor or flashcards.'}</p></div>`;
+    <p class="hint" style="text-align:center">${pct>=75?'Strong work - those concepts moved up in your model.':pct>=50?'Getting there - the weaker concepts are flagged for review.':'These concepts need another pass. Try the tutor or flashcards.'}</p></div>`;
   Q.items.forEach((it,qi)=>{
     html+=`<div class="qCard"><div class="qq">${qi+1}. ${esc(it.q)}</div>`;
     it.options.forEach((op,oi)=>{
@@ -1797,7 +1801,7 @@ function renderQuizResult(){
   if(Q.adaptiveConcept){
     const mm=S.concepts[aKey(Q.adaptiveConcept)]?S.concepts[aKey(Q.adaptiveConcept)].score:null;
     const okEnough=mm!=null&&mm>=50;
-    html+=`<div class="card" style="border-left:3px solid var(--${okEnough?'green':'amber'})"><h3 class="aH5">${okEnough?"You're ready to continue":"Let's approach this another way"}</h3><p class="hint">${okEnough?esc(cap(Q.adaptiveConcept.toLowerCase()))+' is looking stronger. Head back to your path for the next step.':'This concept still needs a little work. Try a simpler explanation or another set of questions.'}</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">${okEnough?'':'<button class="btn ghost" id="aReexplain" style="padding:7px 12px;font-size:12px">Explain it simply</button>'}<button class="btn" id="aBackPath" style="padding:7px 14px;font-size:12px">Back to Adaptive Path</button></div></div>`;
+    html+=`<div class="card" style="border-left:3px solid var(--${okEnough?'green':'amber'})"><h3 class="aH5">${okEnough?"You're ready to continue":"Let's approach this another way"}</h3><p class="hint">${okEnough?esc(cap(Q.adaptiveConcept.toLowerCase()))+' is looking stronger. Head back to your path for the next step.':'This concept still needs a little work. Try a simpler explanation or another set of questions.'}</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">${okEnough?'':'<button class="btn ghost" id="aReexplain" style="padding:7px 12px;font-size:12px">Explain it simply</button>'}<button class="btn" id="aBackPath" style="padding:7px 14px;font-size:12px">Back to Adaptive Learning Path</button></div></div>`;
   }
   html+=`<button class="btn ghost" id="newQuiz" style="width:100%;justify-content:center">New quiz from this page</button>`;
   pad.innerHTML=html;
@@ -1848,7 +1852,7 @@ function renderCards(){
   const due=srsDueCount();
   pad.innerHTML=`
     <div class="card"><h4>Flashcards</h4><p class="hint">Tap the card to flip, then rate how well you knew it. Cards you miss come back sooner (spaced repetition).${S.cardsOffline?' <br><span style="color:var(--amber)">Built-in offline deck (AI tutor is offline).</span>':''}</p>
-      ${due?`<button class="btn ghost" id="revDue" style="margin-top:10px;padding:7px 12px;font-size:12px">Review ${due} due card${due>1?'s':''} first</button>`:'<p class="hint" style="margin-top:8px;color:var(--green)">All caught up — no cards due right now.</p>'}</div>
+      ${due?`<button class="btn ghost" id="revDue" style="margin-top:10px;padding:7px 12px;font-size:12px">Review ${due} due card${due>1?'s':''} first</button>`:'<p class="hint" style="margin-top:8px;color:var(--green)">All caught up - no cards due right now.</p>'}</div>
     <div id="fcStage"><div id="fcCard">
       <div class="fcFace front"><span class="lbl">Front</span><span>${esc(c.front)}</span></div>
       <div class="fcFace back"><span class="lbl">Back</span><span>${esc(c.back)}</span></div>
@@ -1992,7 +1996,7 @@ function updateStats(){
     <div class="card"><h4>Learning</h4>
       <div class="statGrid">
         <div class="stat"><div class="n">${st.quizzesTaken}</div><div class="l">quizzes taken</div></div>
-        <div class="stat"><div class="n">${acc==null?'—':acc+'%'}</div><div class="l">quiz accuracy</div></div>
+        <div class="stat"><div class="n">${acc==null?'-':acc+'%'}</div><div class="l">quiz accuracy</div></div>
         <div class="stat"><div class="n">${strong}</div><div class="l">strong concepts</div></div>
         <div class="stat"><div class="n">${weak}</div><div class="l">need review</div></div>
       </div>
@@ -2050,7 +2054,7 @@ let hlMode=false;
 function toggleHLMode(){
   hlMode=!hlMode; $('#hlModeBtn').style.background=hlMode?'var(--hl)':'';
   $('#hlModeBtn').style.color=hlMode?'#22303F':'';
-  toast(hlMode?'Highlighter on — click a paragraph':'Highlighter off');
+  toast(hlMode?'Highlighter on - click a paragraph':'Highlighter off');
 }
 $('#textPage').addEventListener('click',e=>{
   if(!hlMode)return;
@@ -2087,7 +2091,7 @@ function loadDemo(id){
   // Seed curated mastery so Progress + Concept Map are populated instantly.
   if(t.mastery){ Object.entries(t.mastery).forEach(([name,score])=>{ const k=cap(String(name).toLowerCase());
     const seen=(S.concepts[k]&&S.concepts[k].seen)||0; S.concepts[k]={score:Math.round(score),seen:seen+1}; }); }
-  // Seed lightweight adaptive signals so the Adaptive Path has real inputs to reason from.
+  // Seed lightweight adaptive signals so the Adaptive Learning Path has real inputs to reason from.
   if(t.mastery){ Object.entries(t.mastery).forEach(([name,score])=>{ const s=aSig(name); s.previousMastery=Math.round(score);
     if(score<52){ s.quizAttempts=3;s.correct=1;s.incorrect=2;s.tutorQuestions=1;s.explanationRequests=1;s.lastInteraction=Date.now(); }
     else if(score<70){ s.quizAttempts=3;s.correct=2;s.incorrect=1;s.lastInteraction=Date.now(); } }); }
@@ -2097,6 +2101,7 @@ function loadDemo(id){
   S.cards=[]; S.cardsOffline=false; S.quiz=null; // regenerate for this topic on demand
   setDemo(true, t.subject);
   save(); renderModel(); renderGraph(); addToShelf();
+  if(typeof srBroadcastReader==='function'){ srSuppressBroadcast=false; srBroadcastReader(); }
 }
 /* ============ About (panel tab) ============ */
 function aboutBodyHTML(){
@@ -2110,7 +2115,7 @@ function aboutBodyHTML(){
       <li><b>Get tutored, not just told.</b> In Guide me mode the tutor asks guiding questions so you reason to the answer yourself. Switch to Just answer when you want it direct.</li>
       <li><b>Capture what matters.</b> The Notebook keeps typed or dictated notes and hand-drawn sketches for each page, and can turn them straight into flashcards or a quiz.</li>
       <li><b>Check your understanding.</b> Generate a quiz or flashcards from the page or your notes. Quiz results raise or lower your mastery scores.</li>
-      <li><b>See what you know and what is next.</b> Progress shows a mastery bar for every concept and a knowledge graph, and the Adaptive Path recommends exactly what to review next.</li>
+      <li><b>See what you know and what is next.</b> Progress shows a mastery bar for every concept and a knowledge graph, and the Adaptive Learning Path recommends exactly what to review next.</li>
       <li><b>Study together.</b> Open a Study Room to read the same page, take shared notes, draw together, chat, and talk by voice with a study buddy in real time.</li>
     </ol>
     <h3 class="aboutH">Study Notebook</h3>
@@ -2122,12 +2127,12 @@ function aboutBodyHTML(){
     <h3 class="aboutH">Accessibility and voice</h3>
     <p class="hint"><b>Why it matters.</b> Learning materials should adapt to the reader, not the other way around. DigiBook builds accessibility into the reading experience itself, so a wider range of students can use the same lessons comfortably and independently instead of needing a separate, stripped-down version.</p>
     <p class="hint"><b>How it works.</b> Open the Accessibility panel from the person icon in the top bar and switch on what you need: read aloud with a choice of a male or female voice and adjustable speed, voice commands and voice dictation, high contrast, large or extra-large text, comfortable or spacious line and letter spacing, a dyslexia-friendly font, a reading ruler that dims everything except the line you point at, warm sepia or dark reading themes, reduced motion, and a full keyboard-shortcut list. Choices are remembered on your device, and screen-reader users hear page turns, quiz feedback, path updates, and study-room activity announced automatically. Every core task also works by keyboard alone, with a visible focus outline.</p>
-    <p class="hint"><b>Who it is for.</b> Students with dyslexia (easy-reading font, reading ruler, and read aloud), low vision (large text, high contrast, and a zoom-friendly layout), motor differences (large touch targets and full keyboard control, with the drawing canvas kept optional), attention differences (the ruler and reduced motion cut visual clutter), and English learners (read aloud paired with nine-language translation). It also simply helps anyone studying in a quiet library who wants to listen, or on a phone where typing by voice is easier. Nothing here is an afterthought: reading, tutoring, quizzes, notes, the Adaptive Path, and Study Rooms can all be reached without a mouse and, where useful, without sight.</p>
+    <p class="hint"><b>Who it is for.</b> Students with dyslexia (easy-reading font, reading ruler, and read aloud), low vision (large text, high contrast, and a zoom-friendly layout), motor differences (large touch targets and full keyboard control, with the drawing canvas kept optional), attention differences (the ruler and reduced motion cut visual clutter), and English learners (read aloud paired with nine-language translation). It also simply helps anyone studying in a quiet library who wants to listen, or on a phone where typing by voice is easier. Nothing here is an afterthought: reading, tutoring, quizzes, notes, the Adaptive Learning Path, and Study Rooms can all be reached without a mouse and, where useful, without sight.</p>
     <h3 class="aboutH">The main tabs</h3>
     <ul class="aboutGrid">
       <li><b>Learn</b><span>Read, then select any word or passage to define, explain, translate, or ask the Socratic tutor.</span></li>
       <li><b>Quiz</b><span>Adaptive questions built from the page that target the concepts you're still building.</span></li>
-      <li><b>Progress</b><span>Your open student model, concept map, flashcards, stats, and Adaptive Path together.</span></li>
+      <li><b>Progress</b><span>Your open student model, concept map, flashcards, stats, and Adaptive Learning Path together.</span></li>
       <li><b>About</b><span>What DigiBook is, how it works, and its research roots.</span></li>
     </ul>
     <h3 class="aboutH">Why it is different from an e-reader</h3>
@@ -2416,7 +2421,7 @@ function downloadStudyReport(){
   const imp=S.adaptive.improvements.slice(0,6).map(i=>`<li>${esc(cap(String(i.concept).toLowerCase()))}: ${i.from}% to ${i.to}%</li>`).join('')||'<li>None recorded yet</li>';
   const rec=aRecommend();
   const win=window.open('','_blank'); if(!win){ toast('Allow pop-ups to open the report'); return; }
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>DigiBook — Study Report</title><style>
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>DigiBook - Study Report</title><style>
     body{font-family:Georgia,'Times New Roman',serif;max-width:720px;margin:34px auto;padding:0 22px;color:#22303F}
     h1{font-size:25px;letter-spacing:-.01em} h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:#66727F;margin-top:26px;border-bottom:1px solid #e2ddd0;padding-bottom:6px}
     table{width:100%;border-collapse:collapse;font-size:13px} td{padding:6px 8px;border-bottom:1px solid #eee}
@@ -2424,15 +2429,15 @@ function downloadStudyReport(){
     .bar{height:9px;border-radius:3px;background:#eee;overflow:hidden;width:120px;display:inline-block;vertical-align:middle}
     @media print{ .noprint{display:none} }
   </style></head><body>
-    <h1>DigiBook — Study Report</h1>
+    <h1>DigiBook - Study Report</h1>
     <p class="muted">${S.book?esc(S.book.title):'Your learning'} &middot; ${new Date().toLocaleString()}</p>
     <h2>At a glance</h2>
-    <p><span class="k"><b>${assessed.length}</b> concepts assessed</span><span class="k"><b>${acc==null?'—':acc+'%'}</b> quiz accuracy</span><span class="k"><b>${fmtTime(st.secReading)}</b> reading</span></p>
-    ${rec?`<h2>Recommended next step</h2><p><b>${esc(cap(String(rec.name).toLowerCase()))}</b> — ${Math.round(rec.c.score)}% mastery (${rec.c.score>=50?'developing':'needs review'}). ${esc((typeof aReasons==='function'?aReasons(rec).slice(0,2).join('; '):''))}.</p>`:''}
+    <p><span class="k"><b>${assessed.length}</b> concepts assessed</span><span class="k"><b>${acc==null?'-':acc+'%'}</b> quiz accuracy</span><span class="k"><b>${fmtTime(st.secReading)}</b> reading</span></p>
+    ${rec?`<h2>Recommended next step</h2><p><b>${esc(cap(String(rec.name).toLowerCase()))}</b> - ${Math.round(rec.c.score)}% mastery (${rec.c.score>=50?'developing':'needs review'}). ${esc((typeof aReasons==='function'?aReasons(rec).slice(0,2).join('; '):''))}.</p>`:''}
     <h2>Concept mastery</h2>
     <table><thead><tr><td><b>Concept</b></td><td style="text-align:right"><b>Mastery</b></td><td><b>Band</b></td></tr></thead><tbody>${rows||'<tr><td colspan="3" class="muted">No concepts assessed yet.</td></tr>'}</tbody></table>
     <h2>Recent improvement</h2><ul>${imp}</ul>
-    <p class="muted" style="margin-top:30px;font-size:12px">Generated by DigiBook, an adaptive AI textbook. Educational proof of concept by Ansh Saini, South Brunswick High School, New Jersey.</p>
+    <p class="muted" style="margin-top:30px;font-size:12px">Generated by DigiBook, an adaptive AI textbook. Educational proof of concept.</p>
     <button class="noprint" onclick="window.print()" style="margin-top:16px;padding:9px 16px;border:1px solid #ccc;border-radius:8px;background:#f7f7f7;cursor:pointer">Print / Save as PDF</button>
   </body></html>`);
   win.document.close(); toast('Study report opened');
@@ -3134,14 +3139,14 @@ function srRender(prefillCode){
     +'<div class="srBtns"><button class="btn" id="srCreateBtn">Create Room</button><button class="btn ghost" id="srJoinToggle">Join Room</button></div></div>'
     +'<div class="srCard" id="srCreateCard" style="display:none;margin-top:16px">'
       +'<label class="srField" for="srNameC">Your name or nickname</label>'
-      +'<input class="srInput" id="srNameC" maxlength="24" placeholder="e.g. Deepak" autocomplete="off">'
+      +'<input class="srInput" id="srNameC" maxlength="24" placeholder="e.g. John Doe" autocomplete="off">'
       +'<div class="srErr" id="srCreateErr"></div>'
       +'<div class="srRow"><button class="btn" id="srDoCreate">Create the room</button></div></div>'
     +'<div class="srCard" id="srJoinCard" style="display:'+(showJoin?'block':'none')+';margin-top:16px">'
       +'<label class="srField" for="srCodeJ">Room code</label>'
       +'<input class="srInput" id="srCodeJ" maxlength="6" placeholder="A7K4P2" autocomplete="off" style="text-transform:uppercase" value="'+(prefillCode?esc(prefillCode):'')+'">'
       +'<label class="srField" for="srNameJ">Your name or nickname</label>'
-      +'<input class="srInput" id="srNameJ" maxlength="24" placeholder="e.g. Ansh" autocomplete="off">'
+      +'<input class="srInput" id="srNameJ" maxlength="24" placeholder="e.g. Sally Smith" autocomplete="off">'
       +'<div class="srErr" id="srJoinErr"></div>'
       +'<div class="srRow"><button class="btn" id="srDoJoin">Join room</button></div></div>';
   const cb=$('#srCreateBtn'); if(cb)cb.onclick=()=>{ $('#srCreateCard').style.display='block'; $('#srJoinCard').style.display='none'; const n=$('#srNameC'); if(n)n.focus(); };
