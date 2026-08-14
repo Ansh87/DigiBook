@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DigiBook — The textbook that understands how you learn</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%277%27%20fill%3D%27%2314306B%27/%3E%3Cpath%20d%3D%27M16%209c-3-1.6-6-1.6-9%200v14c3-1.6%206-1.6%209%200c3-1.6%206-1.6%209%200V9c-3-1.6-6-1.6-9%200z%27%20fill%3D%27%23FDFBF5%27/%3E%3Cpath%20d%3D%27M16%209v14%27%20stroke%3D%27%23F2A900%27%20stroke-width%3D%271.8%27/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Space+Grotesk:wght@400;500;600;700&family=Baloo+2:wght@600;700;800&family=Lexend:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -2118,7 +2119,9 @@ function aboutBodyHTML(){
     <h3 class="aboutH">Adaptive Learning Path</h3>
     <p class="hint">DigiBook watches which concepts you struggle with across quizzes, tutor questions, and confusion signals, then ranks what to study next and tells you why, closing the loop between reading, practice, and review.</p>
     <h3 class="aboutH">Accessibility and voice</h3>
-    <p class="hint">The Accessibility panel offers read aloud with a choice of voice and speed, voice commands and dictation, high contrast, larger text, comfortable spacing, a dyslexia-friendly font, a reading ruler, reading themes, reduced motion, and a full keyboard-shortcut list. DigiBook announces page changes, quiz feedback, and room activity to screen readers.</p>
+    <p class="hint"><b>Why it matters.</b> Learning materials should adapt to the reader, not the other way around. DigiBook builds accessibility into the reading experience itself, so a wider range of students can use the same lessons comfortably and independently instead of needing a separate, stripped-down version.</p>
+    <p class="hint"><b>How it works.</b> Open the Accessibility panel from the person icon in the top bar and switch on what you need: read aloud with a choice of a male or female voice and adjustable speed, voice commands and voice dictation, high contrast, large or extra-large text, comfortable or spacious line and letter spacing, a dyslexia-friendly font, a reading ruler that dims everything except the line you point at, warm sepia or dark reading themes, reduced motion, and a full keyboard-shortcut list. Choices are remembered on your device, and screen-reader users hear page turns, quiz feedback, path updates, and study-room activity announced automatically. Every core task also works by keyboard alone, with a visible focus outline.</p>
+    <p class="hint"><b>Who it is for.</b> Students with dyslexia (easy-reading font, reading ruler, and read aloud), low vision (large text, high contrast, and a zoom-friendly layout), motor differences (large touch targets and full keyboard control, with the drawing canvas kept optional), attention differences (the ruler and reduced motion cut visual clutter), and English learners (read aloud paired with nine-language translation). It also simply helps anyone studying in a quiet library who wants to listen, or on a phone where typing by voice is easier. Nothing here is an afterthought: reading, tutoring, quizzes, notes, the Adaptive Path, and Study Rooms can all be reached without a mouse and, where useful, without sight.</p>
     <h3 class="aboutH">The main tabs</h3>
     <ul class="aboutGrid">
       <li><b>Learn</b><span>Read, then select any word or passage to define, explain, translate, or ask the Socratic tutor.</span></li>
@@ -3711,7 +3714,7 @@ $('#fsMinus').onclick=()=>{readFS=Math.max(14,readFS-1);document.documentElement
   const _lv=localStorage.getItem(LS+'_level'); if(_lv){ S.level=_lv; const ls=$('#levelSel'); if(ls)ls.value=_lv; }
   load(); renderChat(); renderModel(); renderShelf(); renderDemoLibrary(); renderAbout(); updateStats(); renderCards(); renderGraph(); renderQuizIdle();
   // ping AI proxy quietly to set pill
-  callAI(TUTOR_SYS,'Reply with the single word: ready').then(r=>{ setAI(!!r); });
+  fetch('/.netlify/functions/ai-proxy').then(r=>r.json()).then(d=>setAI(!!(d&&d.ok&&d.keyConfigured))).catch(()=>setAI(false));
   document.documentElement.style.setProperty('--readfs',readFS+'px');
   acxLoad(); if(S.acx.voice==='girl'||S.acx.voice==='womanPic')S.acx.voice='female'; if(S.acx.voice==='boy'||S.acx.voice==='manPic')S.acx.voice='male'; if(!VOICE_PRESETS[S.acx.voice])S.acx.voice='male'; S.acx.voiceCommands=false; applyAcx();
   if(!SR_OK){ const _m=$('#micBtn'); if(_m)_m.style.display='none'; }
