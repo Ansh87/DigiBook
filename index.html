@@ -3175,7 +3175,7 @@ async function srCreateRoom(name){
   const base=FB_DB.ref('rooms/'+code);
   await base.child('meta').set({ roomCode:code, hostId:uid, presenterId:uid, createdAt:SV(), docTitle:(S.book?S.book.title:''), docType:(S.book?S.book.type:''), shareMode:'workspace' });
   await srWriteMe();
-  if(S.book) base.child('reader').set({page:S.page, updatedBy:uid, updatedAt:SV()});
+  if(S.book) base.child('reader').set({page:S.page, demoId:S.book.demoId||null, docTitle:S.book.title||null, docType:S.book.type||null, updatedBy:uid, updatedAt:SV()});
   srAttach(); srAfterJoin(); toast('Study Room created: '+code);
 }
 async function srJoinRoom(code,name){
@@ -3226,15 +3226,25 @@ function srOnParticipants(v){
 function srOnReader(r){
   srState.presenterPage=r.page;
   if(srState.active && srState.following && srState.following===srState.presenterId && srState.presenterId!==srState.me.participantId){
-    if(typeof r.page==='number' && S.book && r.page!==S.page){ srSuppressBroadcast=true; gotoPage(r.page); announce('Presenter moved to page '+(r.page+1)); }
+    srApplyPresenterDoc(r, true);
   }
   srRenderBar();
+}
+function srApplyPresenterDoc(r, announcePage){
+  if(!r) return;
+  // Auto-open the presenter's demo lesson (built-in only; private uploads are never pushed)
+  if(r.demoId && (typeof DEMO_INDEX==='undefined' || DEMO_INDEX[r.demoId]) && (!S.book || S.book.demoId!==r.demoId)){
+    try{ loadDemo(r.demoId); }catch(e){}
+  } else if(!r.demoId && r.docTitle && !S.book){
+    if(!srState._uploadHint){ srState._uploadHint=true; toast('The presenter is reading their own uploaded document. Open a document to follow along by page.'); }
+  }
+  if(typeof r.page==='number' && S.book && r.page!==S.page){ gotoPage(r.page); if(announcePage) announce('Presenter moved to page '+(r.page+1)); }
 }
 function srBroadcastReader(){
   if(!srState.active || !FB_DB) return;
   if(srState.presenterId!==srState.me.participantId){ srSuppressBroadcast=false; return; }
   if(srSuppressBroadcast){ srSuppressBroadcast=false; return; }
-  try{ FB_DB.ref('rooms/'+srState.roomId+'/reader').update({page:S.page, updatedBy:srState.me.participantId, updatedAt:SV()}); }catch(e){}
+  try{ FB_DB.ref('rooms/'+srState.roomId+'/reader').update({page:S.page, demoId:(S.book&&S.book.demoId)||null, docTitle:(S.book&&S.book.title)||null, docType:(S.book&&S.book.type)||null, updatedBy:srState.me.participantId, updatedAt:SV()}); }catch(e){}
 }
 
 /* ---------- Follow ---------- */
@@ -3246,7 +3256,7 @@ function srToggleFollow(){
 }
 function srReturnToPresenter(){
   if(!FB_DB)return;
-  FB_DB.ref('rooms/'+srState.roomId+'/reader').get().then(s=>{ const r=s.val(); if(r&&typeof r.page==='number'&&S.book){ srSuppressBroadcast=true; gotoPage(r.page); } }).catch(()=>{});
+  FB_DB.ref('rooms/'+srState.roomId+'/reader').get().then(s=>{ const r=s.val(); if(r) srApplyPresenterDoc(r, false); }).catch(()=>{});
 }
 
 /* ---------- Active bar ---------- */
@@ -3603,7 +3613,7 @@ function srConnectPeer(pid, initiator){
   pc.ontrack=(e)=>{ srAttachRemoteAudio(pid, e.streams[0]); };
   pc.oniceconnectionstatechange=()=>console.log('[sr-audio] ice '+pid+' -> '+pc.iceConnectionState);
   pc.onconnectionstatechange=()=>{ console.log('[sr-audio] conn '+pid+' -> '+pc.connectionState); if(pc.connectionState==='failed'){ srClosePeer(pid); } };
-  if(initiator){ pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>srRtcSend(pid,{kind:'offer', sdp:pc.localDescription})).catch(()=>{}); }
+  if(initiator){ pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>srRtcSend(pid,{kind:'offer', sdp:{type:pc.localDescription.type, sdp:pc.localDescription.sdp}})).catch(()=>{}); }
 }
 async function srRtcHandle(m){
   if(!srAudio.on) return; // ignore stray signals when not in audio
@@ -3614,7 +3624,7 @@ async function srRtcHandle(m){
       await pc.setRemoteDescription(m.sdp);
       await srFlushPending(pid);
       const a=await pc.createAnswer(); await pc.setLocalDescription(a);
-      srRtcSend(pid,{kind:'answer', sdp:pc.localDescription});
+      srRtcSend(pid,{kind:'answer', sdp:{type:pc.localDescription.type, sdp:pc.localDescription.sdp}});
     } else if(m.kind==='answer'){
       if(pc){ await pc.setRemoteDescription(m.sdp); await srFlushPending(pid); }
     } else if(m.kind==='candidate'){
