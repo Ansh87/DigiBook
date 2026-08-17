@@ -454,7 +454,8 @@ body.acx-easy .raAv{width:44px;height:44px}
 #raBar button:hover{background:var(--page)}
 #raBar select{font-size:12px;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
 .ra-current{background:var(--hl-soft) !important;border-radius:5px;box-shadow:0 0 0 3px var(--hl-soft)}
-.msgRead{margin-top:6px;font-size:11px;font-weight:600;color:var(--blue);border:1px solid var(--line);border-radius:7px;padding:2px 8px;background:var(--paper);display:inline-flex;gap:4px;align-items:center}
+.msgRead{margin-top:6px;font-size:11px;font-weight:600;color:var(--blue);border:1px solid var(--line);border-radius:7px;padding:2px 8px;background:var(--paper);display:inline-flex;gap:4px;align-items:center;cursor:pointer}
+.msgRead.speaking,.raMini.speaking{color:#b3261e;border-color:#b3261e}
 .raMini{font-size:11.5px;font-weight:600;color:var(--blue);border:1px solid var(--line);border-radius:8px;padding:4px 9px;background:var(--paper);margin-top:8px}
 /* Mic + voice indicator */
 #micBtn{flex:0 0 auto;width:42px;border-radius:9px;border:1px solid var(--line);background:var(--paper);font-size:15px;cursor:pointer}
@@ -1549,7 +1550,7 @@ document.addEventListener('mousedown',e=>{ if(!closestOf(e.target,'#selPop'))pop
 function ctx(){ return S.pageText? `\n\nContext - the passage the student is currently reading:\n"""${S.pageText.slice(0,1800)}"""`:''; }
 const TUTOR_SYS=`You are the DigiBook tutor, a warm, encouraging teacher for students and lifelong learners. Keep answers clear and concise. Never mention which AI model or company powers you; you are simply "the DigiBook tutor." Use plain language and concrete examples.`;
 
-function pushChat(role,content,src){ S.chat.push({role,content,src}); renderChat(); if(role==='ai' && S.acx && S.acx.readAloud && S.acx.autoReadTutor) raSpeakOnce(content, tutorLangCode()); }
+function pushChat(role,content,src){ S.chat.push({role,content,src}); renderChat(); if(role==='ai' && S.acx && S.acx.readAloud && S.acx.autoReadTutor){ const b=document.querySelector('.msgRead[data-i="'+(S.chat.length-1)+'"]'); raSpeakToggle(content, tutorLangCode(), b||undefined); } }
 function openTutor(){ switchTab('learn'); }
 
 async function defineWord(w){
@@ -1604,10 +1605,10 @@ function renderChat(){
   log.innerHTML=S.chat.map((m,i)=>{
     if(m.role==='sys')return `<div class="msg sys">${esc(m.content)}</div>`;
     const src=m.src==='offline'?`<span class="src">tutor offline - reconnect for a live answer</span>`:'';
-    const rd=(m.role==='ai'&&canRead)?`<button class="msgRead" data-i="${i}" aria-label="Read this response aloud"><span aria-hidden="true">🔊</span> Read</button>`:'';
+    const rd=(m.role==='ai'&&canRead)?`<button class="msgRead" data-i="${i}" aria-label="Read this response aloud"><span class="ri" aria-hidden="true">🔊</span> <span class="msgReadLbl">Read</span></button>`:'';
     return `<div class="msg ${m.role==='user'?'user':'ai'}">${esc(m.content)}${src}${rd}</div>`;
   }).join('');
-  log.querySelectorAll('.msgRead').forEach(b=>b.onclick=()=>{ const m=S.chat[+b.dataset.i]; if(m)raSpeakOnce(m.content); });
+  log.querySelectorAll('.msgRead').forEach(b=>b.onclick=()=>{ const m=S.chat[+b.dataset.i]; if(m)raSpeakToggle(m.content, tutorLangCode(), b); });
   log.scrollTop=log.scrollHeight;
 }
 function typingMsg(){
@@ -1797,7 +1798,7 @@ function renderQuiz(){
     b.classList.add('sel');
   });
   $('#submitQuiz').onclick=submitQuiz;
-  const rq=$('#raQuiz'); if(rq)rq.onclick=()=>raSpeakOnce(Q.items.map((it,qi)=>`Question ${qi+1}. ${it.q}. Options: `+it.options.map((o,oi)=>'ABCD'[oi]+', '+o).join('. ')).join('. '));
+  const rq=$('#raQuiz'); if(rq)rq.onclick=()=>raSpeakToggle(Q.items.map((it,qi)=>`Question ${qi+1}. ${it.q}. Options: `+it.options.map((o,oi)=>'ABCD'[oi]+', '+o).join('. ')).join('. '), undefined, rq);
 }
 function submitQuiz(){
   const Q=S.quiz;
@@ -2360,7 +2361,7 @@ function renderAdaptive(){
   pad.innerHTML=h;
   $('#aHowBtn').onclick=()=>{ const e=$('#aHow'); e.style.display=e.style.display==='none'?'block':'none'; };
   $('#aStart').onclick=()=>startAdaptiveLesson(rec.name);
-  const rn=$('#raNext2'); if(rn)rn.onclick=()=>raSpeakOnce('Next best step. '+aDisplay(rec.name)+'. '+reasons.join('. ')+'. Estimated '+lessonMin+' minutes.');
+  const rn=$('#raNext2'); if(rn)rn.onclick=()=>raSpeakToggle('Next best step. '+aDisplay(rec.name)+'. '+reasons.join('. ')+'. Estimated '+lessonMin+' minutes.', undefined, rn);
   $('#aRecalc').onclick=()=>{ adaptiveRecalc(true); };
   pad.querySelectorAll('.aStep').forEach(b=>b.onclick=()=>startPathStep(b.dataset.type,b.dataset.concept));
 }
@@ -2773,6 +2774,26 @@ function raNext(){ if(!raState.chunks.length){raPlayPage();return;} if(raState.i
 function raPrev(){ if(!raState.chunks.length){raPlayPage();return;} if(raState.idx>0){raState.idx--; raState.playing=true; raSpeakChunk();} }
 function raSetSpeed(v){ S.acx.speechRate=parseFloat(v)||1; acxSave(); if(raState.playing) raSpeakChunk(); }
 function raSpeakOnce(text, code){ if(!TTS_OK||!text)return; try{TTS.cancel();}catch(e){} const u=raApplyVoice(new SpeechSynthesisUtterance(String(text)), code); TTS.speak(u); }
+// One-shot reads (tutor answers, quiz, recommendation) are stoppable: the button
+// that started them turns into a Stop control and clicking it again cancels.
+let _raOnceBtn=null;
+function _raBtnSet(btn,on){
+  if(!btn)return;
+  btn.classList.toggle('speaking',on);
+  const lbl=btn.querySelector('.msgReadLbl'); if(lbl) lbl.textContent=on?'Stop':'Read';
+  const ic=btn.querySelector('.ri'); if(ic) ic.textContent=on?'⏹':'🔊';
+  btn.setAttribute('aria-label',on?'Stop reading':'Read this response aloud');
+}
+function raStopOnce(){ try{TTS.cancel();}catch(e){} if(_raOnceBtn){ _raBtnSet(_raOnceBtn,false); _raOnceBtn=null; } }
+function raSpeakToggle(text,code,btn){
+  if(!TTS_OK||!text)return;
+  if(btn && _raOnceBtn===btn){ raStopOnce(); return; } // second click on same button stops
+  raStopOnce();
+  const u=raApplyVoice(new SpeechSynthesisUtterance(String(text)), code);
+  u.onend=()=>{ if(_raOnceBtn===btn){ _raBtnSet(btn,false); _raOnceBtn=null; } };
+  _raOnceBtn=btn||null; _raBtnSet(btn,true);
+  try{TTS.speak(u);}catch(e){}
+}
 function raUpdateBar(){ const pp=$('#raPlay'); if(pp){ const playing=TTS&&TTS.speaking&&!TTS.paused; pp.textContent=playing?'⏸':'▶'; pp.setAttribute('aria-label',playing?'Pause reading':'Play reading'); } }
 
 /* ---------- Voice input (dictation) for the tutor ---------- */
