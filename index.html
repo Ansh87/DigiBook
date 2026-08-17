@@ -978,40 +978,61 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200)}
 
 /* ============ AI layer (Gemini via Netlify proxy, graceful fallback) ============ */
-async function callAI(system, user, json=false){
+let _aiLastReason='';
+// Serialize all AI calls through one channel with a small gap. Firing several
+// generations at once (explain + quiz + cards + graph) bursts past the free-tier
+// per-minute limit and returns 429/502 on every call. One-at-a-time with a short
+// spacing keeps us under the rate cap.
+let _aiChain=Promise.resolve();
+function callAI(system, user, json=false){
+  const run=async()=>{ const out=await _callAICore(system,user,json); await new Promise(r=>setTimeout(r,400)); return out; };
+  const p=_aiChain.then(run, run); // continue the chain even if a prior call rejected
+  _aiChain=p.catch(()=>{});
+  return p;
+}
+async function _callAICore(system, user, json=false){
   // Retry transient throttling (Gemini free tier rate-limits bursts) before giving up.
+  // Longer, spread-out backoff: free-tier per-minute limits recover on a ~seconds scale.
   const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
-  for(let attempt=0; attempt<3; attempt++){
+  const backoff=[1200,3000,6000]; // ms between attempts
+  for(let attempt=0; attempt<4; attempt++){
     try{
       const r=await fetch('/.netlify/functions/ai-proxy',{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({system,user,json})
       });
       if(!r.ok){
-        if((r.status===429||r.status===502||r.status===503) && attempt<2){ await wait(700*(attempt+1)); continue; }
+        // Surface the real upstream reason so quota vs model vs safety is visible.
+        let detail=''; try{ const eb=await r.json(); detail=eb&&(eb.detail||eb.error)||''; }catch(_){}
+        _aiLastReason='HTTP '+r.status+(detail?(' - '+detail):'');
+        console.warn('[DigiBook AI] proxy failed:', _aiLastReason);
+        if((r.status===429||r.status===502||r.status===503) && attempt<3){ await wait(backoff[attempt]||6000); continue; }
         throw new Error('proxy '+r.status);
       }
       const d=await r.json();
       const txt=d.text||'';
-      if(!txt){ if(attempt<2){ await wait(700*(attempt+1)); continue; } throw new Error('empty'); }
+      if(!txt){ _aiLastReason='empty response'; if(attempt<3){ await wait(backoff[attempt]||6000); continue; } throw new Error('empty'); }
       setAI(true);
       return txt;
     }catch(e){
-      if(attempt<2){ await wait(700*(attempt+1)); continue; }
+      if(attempt<3){ await wait(backoff[attempt]||6000); continue; }
       setAI(false);
       return null; // caller handles offline
     }
   }
   setAI(false); return null;
 }
-let _aiFails=0;
 function setAI(ok){
-  // Sticky status: a single failed request does not flip the pill Offline; any
-  // success restores Live immediately. Prevents the on/off flicker from brief throttles.
-  if(ok){ _aiFails=0; } else { _aiFails++; if(_aiFails<2) return; }
+  // Honest status: callAI already retries several times before this runs, so a
+  // failure that reaches here is a genuine outage - reflect it immediately.
+  // Any success restores Live at once.
+  if(S.aiOK===ok) return;
   S.aiOK=ok;const p=$('#aiPill'),t=$('#aiPillTxt');
+  if(!p||!t) return;
   p.className='pill '+(ok?'live':'offline');
   t.textContent=ok?'AI Tutor: Live':'AI Tutor: Offline';
+  if(!ok && _aiLastReason) p.title='Last error: '+_aiLastReason;
+  else p.title='';
 }
 function stripFence(t){return (t||'').replace(/```json/gi,'').replace(/```/g,'').trim()}
 async function callAIJSON(system,user){
