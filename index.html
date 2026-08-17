@@ -1549,7 +1549,7 @@ document.addEventListener('mousedown',e=>{ if(!closestOf(e.target,'#selPop'))pop
 function ctx(){ return S.pageText? `\n\nContext - the passage the student is currently reading:\n"""${S.pageText.slice(0,1800)}"""`:''; }
 const TUTOR_SYS=`You are the DigiBook tutor, a warm, encouraging teacher for students and lifelong learners. Keep answers clear and concise. Never mention which AI model or company powers you; you are simply "the DigiBook tutor." Use plain language and concrete examples.`;
 
-function pushChat(role,content,src){ S.chat.push({role,content,src}); renderChat(); if(role==='ai' && S.acx && S.acx.readAloud && S.acx.autoReadTutor) raSpeakOnce(content); }
+function pushChat(role,content,src){ S.chat.push({role,content,src}); renderChat(); if(role==='ai' && S.acx && S.acx.readAloud && S.acx.autoReadTutor) raSpeakOnce(content, tutorLangCode()); }
 function openTutor(){ switchTab('learn'); }
 
 async function defineWord(w){
@@ -2535,9 +2535,67 @@ function pickVoice(gender){
   if(!re) return order[0] || null; // no gender: any local voice so pitch applies
   return order.find(v=>re.test(v.name)) || order.find(v=>anti && !anti.test(v.name)) || order[0] || null;
 }
-function raApplyVoice(u){
+// ---- Multilingual read-aloud ----
+// The old code always picked an English voice and never set utterance.lang, so
+// non-Latin scripts (Hindi/Devanagari, etc.) were pronounced letter-by-letter or
+// skipped entirely. We now detect the script of each run and use a matching voice.
+function scriptOf(ch){
+  const c=ch.codePointAt(0);
+  // Scoped to the nine languages the app offers. Non-Latin scripts among them:
+  if(c>=0x0900&&c<=0x097F) return 'hi';   // Devanagari (Hindi)
+  if(c>=0x0600&&c<=0x06FF) return 'ar';   // Arabic
+  if(c>=0x3040&&c<=0x30FF) return 'ja';   // Japanese Kana
+  if(c>=0xAC00&&c<=0xD7AF) return 'ko';   // Korean Hangul
+  if(c>=0x4E00&&c<=0x9FFF) return 'zh';   // CJK Han (Chinese; also Japanese Kanji)
+  if((c>=0x41&&c<=0x5A)||(c>=0x61&&c<=0x7A)||(c>=0xC0&&c<=0x24F&&c!==0xD7&&c!==0xF7)) return 'la'; // Latin (English/Spanish/French/German)
+  return '';                              // digits/punctuation/space = neutral
+}
+const LANG_BCP={hi:'hi-IN',ar:'ar-SA',ja:'ja-JP',ko:'ko-KR',zh:'zh-CN',es:'es-ES',fr:'fr-FR',de:'de-DE'};
+// Maps the Explanation-language dropdown value to a voice code. English and the
+// other Latin languages that have no dedicated voice fall back to the English path.
+const LANG_NAME_CODE={English:'',Hindi:'hi',Spanish:'es',French:'fr',Chinese:'zh',Arabic:'ar',German:'de',Korean:'ko',Japanese:'ja'};
+function tutorLangCode(){ const el=document.getElementById('langSel'); return el?(LANG_NAME_CODE[el.value]||''):''; }
+function detectScript(text){
+  const counts={}; for(const ch of String(text)){ const s=scriptOf(ch); if(s && s!=='la') counts[s]=(counts[s]||0)+1; }
+  let best='',n=0; for(const k in counts){ if(counts[k]>n){best=k;n=counts[k];} }
+  return best; // '' when the text has no non-Latin script (English handled normally)
+}
+// Break a mixed line into single-script runs so each is spoken with the right voice.
+// Latin letters are their own script ('la'); digits/punctuation/spaces are neutral
+// and stay attached to the surrounding run.
+function splitByScript(text){
+  const runs=[]; let cur='', curLang=null;
+  for(const ch of String(text)){
+    const s=scriptOf(ch); // '' = neutral, 'la' = Latin, else a specific script
+    if(curLang===null){ curLang=s; cur=ch; }
+    else if(s==='' || s===curLang){ cur+=ch; }
+    else { runs.push({text:cur,lang:curLang}); curLang=s; cur=ch; }
+  }
+  if(cur) runs.push({text:cur,lang:curLang===null?'':curLang});
+  return runs.filter(r=>r.text && r.text.trim());
+}
+// Voice whose language matches a code like 'hi', preferring the chosen gender.
+function pickVoiceLang(lang, gender){
+  const list = VOICES_CACHE.length ? VOICES_CACHE : loadVoices();
+  if(!list.length || !lang) return null;
+  const match = list.filter(v=>new RegExp('^'+lang+'(-|_|$)','i').test(v.lang||''));
+  if(!match.length) return null;
+  const re = gender==='female'?FEMALE_RE : (gender==='male'?MALE_RE : null);
+  return (re && match.find(v=>re.test(v.name))) || match[0];
+}
+function raApplyVoice(u, lang){
   const p = VOICE_PRESETS[S.acx.voice] || VOICE_PRESETS.male;
-  const v = pickVoice(p.g); if(v) u.voice = v;
+  let code = (lang===undefined) ? detectScript(u.text||'') : (lang||'');
+  if(code==='la') code=''; // Latin runs use the normal English voice path below
+  if(code){
+    const v = pickVoiceLang(code, p.g);
+    if(v){ u.voice=v; if(v.lang) u.lang=v.lang; }
+    else { u.lang = LANG_BCP[code] || code; } // no installed voice: let the engine route by language
+    u.pitch = 1; // keep other languages natural; pitch shaping is for the English presets only
+    u.rate = Math.max(0.5, Math.min(2, parseFloat(S.acx.speechRate)||1));
+    return u;
+  }
+  const v = pickVoice(p.g); if(v){ u.voice = v; if(v.lang) u.lang = v.lang; }
   u.pitch = Math.max(0, Math.min(2, p.pitch));
   const base = parseFloat(S.acx.speechRate)||1;
   u.rate = Math.max(0.5, Math.min(2, base * p.rate));
@@ -2684,17 +2742,28 @@ function raStopHighlight(){ $$('.ra-current').forEach(e=>e.classList.remove('ra-
 function raStop(){ try{ if(TTS)TTS.cancel(); }catch(e){} raState.playing=false; raStopHighlight(); raUpdateBar(); }
 function raCollect(){
   const sel=(window.getSelection?String(window.getSelection()):'').trim();
-  if(sel && sel.length>1) return [{text:sel,el:null}];
-  const ps=$$('#textPage p'); if(ps.length) return ps.map(p=>({text:p.textContent,el:p}));
-  if(S.pageText) return S.pageText.split(/(?<=[.!?])\s+/).filter(Boolean).map(t=>({text:t,el:null}));
-  return [];
+  let base;
+  if(sel && sel.length>1) base=[{text:sel,el:null}];
+  else { const ps=$$('#textPage p');
+    if(ps.length) base=ps.map(p=>({text:p.textContent,el:p}));
+    else if(S.pageText) base=S.pageText.split(/(?<=[.!?])\s+/).filter(Boolean).map(t=>({text:t,el:null}));
+    else base=[]; }
+  // Expand each chunk into single-script runs so Hindi (and other scripts) are
+  // spoken with a matching voice instead of being skipped by an English voice.
+  const out=[];
+  for(const c of base){
+    const runs=splitByScript(c.text);
+    if(runs.length<=1) out.push({text:c.text,el:c.el,lang:runs[0]?runs[0].lang:''});
+    else runs.forEach(r=>out.push({text:r.text,el:c.el,lang:r.lang}));
+  }
+  return out;
 }
 function raSpeakChunk(){
   if(!TTS_OK)return; raStopHighlight();
   const c=raState.chunks[raState.idx]; if(!c){ raStop(); return; }
   if(c.el){ c.el.classList.add('ra-current'); try{c.el.scrollIntoView({block:'center',behavior:S.acx.reduceMotion?'auto':'smooth'});}catch(e){} }
   try{TTS.cancel();}catch(e){}
-  const u=raApplyVoice(new SpeechSynthesisUtterance(c.text));
+  const u=raApplyVoice(new SpeechSynthesisUtterance(c.text), c.lang);
   u.onend=()=>{ if(!raState.playing)return; if(raState.idx<raState.chunks.length-1){ raState.idx++; raSpeakChunk(); } else { raState.playing=false; raStopHighlight(); raUpdateBar(); } };
   TTS.speak(u); raState.playing=true; raUpdateBar();
 }
@@ -2703,7 +2772,7 @@ function raToggle(){ if(!TTS_OK){announce('Read aloud is not available in this b
 function raNext(){ if(!raState.chunks.length){raPlayPage();return;} if(raState.idx<raState.chunks.length-1){raState.idx++; raState.playing=true; raSpeakChunk();} }
 function raPrev(){ if(!raState.chunks.length){raPlayPage();return;} if(raState.idx>0){raState.idx--; raState.playing=true; raSpeakChunk();} }
 function raSetSpeed(v){ S.acx.speechRate=parseFloat(v)||1; acxSave(); if(raState.playing) raSpeakChunk(); }
-function raSpeakOnce(text){ if(!TTS_OK||!text)return; try{TTS.cancel();}catch(e){} const u=raApplyVoice(new SpeechSynthesisUtterance(String(text))); TTS.speak(u); }
+function raSpeakOnce(text, code){ if(!TTS_OK||!text)return; try{TTS.cancel();}catch(e){} const u=raApplyVoice(new SpeechSynthesisUtterance(String(text)), code); TTS.speak(u); }
 function raUpdateBar(){ const pp=$('#raPlay'); if(pp){ const playing=TTS&&TTS.speaking&&!TTS.paused; pp.textContent=playing?'⏸':'▶'; pp.setAttribute('aria-label',playing?'Pause reading':'Play reading'); } }
 
 /* ---------- Voice input (dictation) for the tutor ---------- */
