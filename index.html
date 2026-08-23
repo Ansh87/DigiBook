@@ -49,7 +49,10 @@ select.ctl{font-family:inherit;font-size:12px;padding:6px 8px;border:1px solid v
 /* ---------- Layout ---------- */
 #app{display:flex;height:calc(100% - 62px)}
 #readerCol{flex:1;display:flex;flex-direction:column;min-width:0}
-#panel{width:400px;min-width:340px;border-left:1px solid var(--line);background:var(--page);display:flex;flex-direction:column}
+#panel{width:400px;min-width:340px;border-left:1px solid var(--line);background:var(--page);display:none;flex-direction:column}
+body.panel-open #panel{display:flex}
+body.nb-left #panel{order:-1;border-left:none;border-right:1px solid var(--line)}
+body.nb-left #panelTop{display:none}
 #panelTabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto}
 #panelTabs button{flex:1;padding:11px 6px;font-size:12px;font-weight:600;color:var(--ink-soft);border-bottom:2px solid transparent;white-space:nowrap}
 #panelTabs button.active{color:var(--blue);border-bottom-color:var(--hl)}
@@ -191,11 +194,21 @@ select.ctl{font-family:inherit;font-size:12px;padding:6px 8px;border:1px solid v
 #aboutOverlay{position:fixed;inset:0;z-index:120;background:rgba(20,26,34,.55);backdrop-filter:blur(3px);display:none;align-items:flex-start;justify-content:center;padding:34px 16px;overflow-y:auto}
 #aboutOverlay.open{display:flex}
 #aboutCard{position:relative;width:100%;max-width:560px;background:var(--page);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:26px 26px 24px;margin:auto}
+#srOverlay{position:fixed;inset:0;z-index:120;background:rgba(20,26,34,.55);backdrop-filter:blur(3px);display:none;align-items:flex-start;justify-content:center;padding:34px 16px;overflow-y:auto}
+#srOverlay.open{display:flex}
+#srModalCard{position:relative;width:100%;max-width:560px;background:var(--page);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:24px 22px 22px;margin:auto;display:flex;flex-direction:column;max-height:calc(100vh - 68px)}
+#srModalCard #srContent{overflow-y:auto;min-height:0}
+#srModalClose{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:14px;cursor:pointer;z-index:2}
+#srModalClose:hover{background:var(--page)}
+.ico{width:17px;height:17px;flex:0 0 auto;vertical-align:-3.5px}
+.ico.sm{width:14px;height:14px;vertical-align:-2.5px}
 #aboutClose{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:8px;font-size:15px;color:var(--ink-soft);border:1px solid var(--line)}
 #aboutClose:hover{background:var(--blue-soft);color:var(--ink)}
 .aboutHead{margin-bottom:16px;padding-right:36px}
 .aboutLede{font-family:'Newsreader',Georgia,serif;font-size:17px;line-height:1.55;color:var(--ink);margin-bottom:20px}
 .aboutH{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-soft);margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.aboutIntro{font-size:14px;line-height:1.65;color:var(--ink)}
+.aboutList{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.6;color:var(--ink-soft)}
 .aboutSteps{list-style:none;counter-reset:st}
 .aboutSteps li{counter-increment:st;position:relative;padding-left:38px;margin-bottom:13px;font-size:13.5px;line-height:1.55;color:var(--ink-soft)}
 .aboutSteps li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;background:var(--hl);color:#22303F;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
@@ -228,10 +241,8 @@ select.ctl{font-family:inherit;font-size:12px;padding:6px 8px;border:1px solid v
   /* keep the top bar usable on phones: hide the least-essential controls */
   #topbar{gap:8px;padding:0 10px}
   #langSel{max-width:96px}
-  #fsMinus,#fsPlus{display:none}
   .logo{font-size:15px}
   #readerBar{gap:6px;padding:7px 10px}
-  #quizPageBtn{font-size:11px;padding:5px 9px}
 }
 
 /* ---------- v2 shell: brand, demo library, progress sub-nav ---------- */
@@ -368,7 +379,6 @@ body[data-read="easy"] .msg,body[data-read="easy"] .fcFace{font-family:'Lexend',
   #topbar{gap:6px;padding:0 8px}
   .logo{font-size:16px}
   .brandMark svg{width:30px;height:30px}
-  #aiPillTxt,#demoPillTxt{display:none}
   .pill{padding:6px}
   #langSel{max-width:72px}
   .aNextRow{gap:10px}
@@ -589,9 +599,7 @@ body.acx-easy #nbToolbar button,body.acx-easy #nbSketchTools button{height:38px}
 
 
 /* ---------- Live Study Room ---------- */
-#srBtn.on{background:var(--hl);color:#22303F}
-#pv-studyroom{flex-direction:column;height:100%;padding:0}
-#pv-studyroom.active{display:flex}
+#srBtn.on,#panelBtn.on,#ttsBtn.on{background:var(--hl);color:#22303F}
 #srContent{flex:1;overflow:auto;padding:18px 18px 22px}
 .srHero{text-align:center;padding:26px 8px 8px}
 .srHero .srIco{font-size:34px}
@@ -702,19 +710,14 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
     <span class="brandLogoImg" role="img" aria-label="DigiBook"></span>
   </button>
   <div id="bookTitleBar"></div>
-  <span id="demoPill" class="pill demo" style="display:none" title="Preloaded sample document"><span class="dot"></span><span id="demoPillTxt">AI Tutor: Demo</span></span>
-  <span id="aiPill" class="pill offline" title="AI connection status"><span class="dot"></span><span id="aiPillTxt">AI: checking…</span></span>
-  <select class="ctl" id="langSel" title="Explanation language" aria-label="Explanation language">
+  <select class="ctl" id="langSel" hidden aria-hidden="true" tabindex="-1">
     <option value="English">English</option><option value="Hindi">Hindi</option><option value="Spanish">Spanish</option>
     <option value="French">French</option><option value="Chinese">Chinese</option><option value="Arabic">Arabic</option>
     <option value="German">German</option><option value="Korean">Korean</option><option value="Japanese">Japanese</option>
   </select>
-  <button class="iconbtn" id="fsMinus" title="Smaller text">A−</button>
-  <button class="iconbtn" id="fsPlus" title="Larger text">A+</button>
-  <button class="iconbtn" id="acxBtn" title="Accessibility" aria-label="Accessibility settings" aria-haspopup="dialog" data-label="Access">♿</button>
-  <button class="iconbtn" id="srBtn" title="Study Room" aria-label="Study Room" aria-pressed="false" data-label="Study Room">👥</button>
-  <button class="iconbtn" id="themeBtn" title="Toggle dark mode" aria-label="Toggle dark mode" data-label="Theme">◐</button>
-  <button class="iconbtn hbtn" id="homeBtn" title="Home"><span aria-hidden="true">⌂</span><span class="hlbl">Home</span></button>
+  <button class="iconbtn" id="acxBtn" title="Accessibility" aria-label="Accessibility settings" aria-haspopup="dialog" data-label="Access"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 19.5c.8-3.2 3.4-4.9 6.5-4.9s5.7 1.7 6.5 4.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+  <button class="iconbtn" id="panelBtn" title="Tutor &amp; learning tools" aria-label="Open learning tools" aria-pressed="false" data-label="Tutor"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H12l-4.6 3.6a.6.6 0 0 1-1-.47V16H6.5A2.5 2.5 0 0 1 4 13.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
+  <button class="iconbtn" id="srBtn" title="Create a room" aria-label="Create a Study Room" aria-pressed="false" data-label="Study Room"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8.5" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.7-2.8 3-4.3 5.5-4.3s4.8 1.5 5.5 4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M15.5 5.9a3 3 0 0 1 0 5.2M17.8 14.9c1.4.7 2.4 2 2.8 3.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
 </div>
 
 <div id="app">
@@ -734,12 +737,10 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
         <div class="dzBtns">
           <button class="btn" id="pickBtn"><svg class="upIco" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 3v5h5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 18v-6M9.4 14.2 12 11.6l2.6 2.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg> Choose a file</button>
           <div class="ddWrap">
-            <button class="btn ghost" id="demoBtn"><span class="bIco" aria-hidden="true">📚</span> Explore Demo Library <span class="caret" aria-hidden="true">▾</span></button>
+            <button class="btn ghost" id="demoBtn"><span class="bIco" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="4.5" width="4" height="15" rx="1" stroke="currentColor" stroke-width="1.7"/><rect x="10" y="4.5" width="4" height="15" rx="1" stroke="currentColor" stroke-width="1.7"/><path d="m16.6 6 3.9 13.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span> Explore Demo Library <span class="caret" aria-hidden="true">▾</span></button>
             <div id="demoMenu"></div>
           </div>
         </div>
-        <div class="dzHint"><span aria-hidden="true">🔒</span> Start with a demo lesson, or upload your own document.</div>
-        <button class="playLink" id="playDemo"><span aria-hidden="true">▶</span> Play the featured demo</button>
         <input type="file" id="fileInput" accept=".pdf,.docx,.txt" hidden>
       </div>
       <div id="shelf"></div>
@@ -750,13 +751,12 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
       <div id="readerBar">
         <button class="iconbtn" id="prevBtn" title="Previous page" aria-label="Previous page" data-label="Previous">‹</button>
         <button class="iconbtn" id="nextBtn" title="Next page" aria-label="Next page" data-label="Next">›</button>
-        <button class="iconbtn" id="bmBtn" title="Bookmark this page" aria-label="Bookmark this page" aria-pressed="false" data-label="Bookmark">🔖</button>
-        <button class="iconbtn" id="hlModeBtn" title="Highlighter: click a paragraph to highlight" aria-label="Highlighter" aria-pressed="false" data-label="Highlight">🖍️</button>
-        <button class="iconbtn" id="readFontBtn" title="Easy-reading font (dyslexia-friendly)" aria-label="Toggle easy-reading font" aria-pressed="false" data-label="Easy font">🔡</button>
-        <button class="iconbtn" id="nbBtn" title="Study Notebook" aria-label="Study Notebook" aria-pressed="false" data-label="Notebook">📝</button>
+        <button class="iconbtn" id="bmBtn" title="Bookmark this page" aria-label="Bookmark this page" aria-pressed="false" data-label="Bookmark"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 5.2A1.2 1.2 0 0 1 7.7 4h8.6a1.2 1.2 0 0 1 1.2 1.2V20l-5.5-3.4L6.5 20z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
+        <button class="iconbtn" id="hlModeBtn" title="Highlighter: click a paragraph to highlight" aria-label="Highlighter" aria-pressed="false" data-label="Highlight"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m13.8 5.2 5 5L10 19H5v-5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m12 7 5 5" stroke="currentColor" stroke-width="1.8"/><path d="M4 21.5h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        <button class="iconbtn" id="ttsBtn" title="Read aloud controls" aria-label="Toggle read aloud controls" aria-pressed="false" data-label="Read aloud"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 9.5v5H8l5 4.2V5.3L8 9.5H4.5z" fill="currentColor"/><path d="M16.2 8.6a4.7 4.7 0 0 1 0 6.8M18.9 6a8.4 8.4 0 0 1 0 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        <button class="iconbtn" id="nbBtn" title="Study Notebook" aria-label="Study Notebook" aria-pressed="false" data-label="Notebook"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 3.5v17M12.5 8h3.5M12.5 12h3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
         <span id="pgInfo"></span>
         <div class="grow"></div>
-        <button class="btn ghost" id="quizPageBtn" style="padding:6px 12px;font-size:12px">Quiz me on this</button>
         <button class="iconbtn hbtn" id="exitReadBtn" title="Exit to Home" style="margin-left:8px"><span aria-hidden="true">✕</span><span class="hlbl">Exit</span></button>
       </div>
       <div id="raBar" role="group" aria-label="Read aloud controls" style="display:none">
@@ -788,8 +788,8 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
       <span class="srAvs" id="srAvs" aria-hidden="true"></span>
       <span class="srCount" id="srCount"></span>
       <span class="srSpacer"></span>
-      <button class="srBtnMini" id="srTalkBtn" aria-label="Talk (audio)" title="Talk">🎙 Talk</button>
-      <button class="srBtnMini" id="srChatBtn" aria-label="Open chat" title="Chat">💬 Chat</button>
+      <button class="srBtnMini" id="srTalkBtn" aria-label="Talk (audio)" title="Talk"><svg class="ico sm" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9.2" y="3.5" width="5.6" height="10" rx="2.8" stroke="currentColor" stroke-width="1.8"/><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Talk</button>
+      <button class="srBtnMini" id="srChatBtn" aria-label="Open chat" title="Chat"><svg class="ico sm" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H12l-4.6 3.6a.6.6 0 0 1-1-.47V16H6.5A2.5 2.5 0 0 1 4 13.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg> Chat</button>
       <button class="srBtnMini" id="srFollowBtn" aria-pressed="false" aria-label="Follow presenter">Follow</button>
       <span class="srMore">
         <button class="srBtnMini" id="srMoreBtn" aria-haspopup="true" aria-expanded="false" aria-label="Study Room options">⋯</button>
@@ -798,10 +798,9 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
     </div>
     <div id="panelTop">
       <div id="panelTabs" role="tablist" aria-label="Panel views">
-        <button data-tab="learn" class="active" role="tab" aria-selected="true"><span class="tIco" aria-hidden="true">📖</span>Learn</button>
-        <button data-tab="quiz" role="tab" aria-selected="false"><span class="tIco" aria-hidden="true">❓</span>Quiz</button>
-        <button data-tab="progress" role="tab" aria-selected="false"><span class="tIco" aria-hidden="true">📊</span>Progress</button>
-        <button data-tab="about" role="tab" aria-selected="false"><span class="tIco" aria-hidden="true">ⓘ</span>About</button>
+        <button data-tab="learn" class="active" role="tab" aria-selected="true"><span class="tIco" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 6.5C10.7 5.3 8.9 4.7 6.6 4.7c-1 0-1.9.1-2.6.3v13.6c.7-.2 1.6-.3 2.6-.3 2.3 0 4.1.6 5.4 1.8 1.3-1.2 3.1-1.8 5.4-1.8 1 0 1.9.1 2.6.3V5c-.7-.2-1.6-.3-2.6-.3-2.3 0-4.1.6-5.4 1.8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 6.5V20" stroke="currentColor" stroke-width="1.7"/></svg></span>Learn</button>
+        <button data-tab="quiz" role="tab" aria-selected="false"><span class="tIco" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7"/><path d="M9.6 9.8c.2-1.4 1.2-2.3 2.6-2.3 1.5 0 2.6 1 2.6 2.3 0 2-2.5 2.2-2.5 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12.3" cy="16.7" r="1" fill="currentColor"/></svg></span>Quiz</button>
+        <button data-tab="progress" role="tab" aria-selected="false"><span class="tIco" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 19.5h15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M7 19.5v-6M12 19.5V5.5M17 19.5v-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>Progress</button>
       </div>
       <button id="focusBtn" class="focusBtn" title="Expand workspace" aria-label="Expand workspace" aria-pressed="false"><span aria-hidden="true">⛶</span> Expand</button>
     </div>
@@ -815,7 +814,7 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
             <button id="modeSocratic" class="on" title="The tutor guides you with questions" aria-pressed="true">Guide me</button>
             <button id="modeDirect" title="The tutor answers directly" aria-pressed="false">Just answer</button>
           </div>
-          <span id="vcIndicator" aria-hidden="true"><span aria-hidden="true">🎤</span> Voice on</span>
+          <span id="vcIndicator" aria-hidden="true"><span aria-hidden="true"><svg class="ico sm" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9.2" y="3.5" width="5.6" height="10" rx="2.8" stroke="currentColor" stroke-width="1.8"/><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span> Voice on</span>
           <span style="margin-left:auto">Level</span>
           <select class="ctl" id="levelSel" style="font-size:11px;padding:4px 6px" aria-label="Explanation difficulty level">
             <option value="simple">Simple</option><option value="standard" selected>Standard</option><option value="advanced">Advanced</option>
@@ -823,7 +822,7 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
         </div>
         <div id="chatInputRow">
           <textarea id="chatInput" rows="1" placeholder="Ask about what you're reading…"></textarea>
-          <button id="micBtn" title="Ask by voice" aria-label="Ask by voice"><span aria-hidden="true">🎤</span></button>
+          <button id="micBtn" title="Ask by voice" aria-label="Ask by voice"><span aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9.2" y="3.5" width="5.6" height="10" rx="2.8" stroke="currentColor" stroke-width="1.8"/><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span></button>
           <button class="btn" id="chatSend">Send</button>
         </div>
       </div>
@@ -863,11 +862,9 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
       </div>
     </div>
 
-    <div class="panelView" id="pv-about" tabindex="0" role="region" aria-label="About DigiBook"><div class="pv-pad" id="aboutPad"></div></div>
-
     <div class="panelView" id="pv-notebook" role="region" aria-label="Study Notebook">
       <div id="nbHead">
-        <h3><span aria-hidden="true">📝</span> Notebook</h3>
+        <h3><span aria-hidden="true"><svg class="ico sm" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 3.5v17M12.5 8h3.5M12.5 12h3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span> Notebook</h3>
         <span class="nbModes" role="group" aria-label="Notebook mode">
           <button id="nbModeNotes" class="on" aria-pressed="true">Notes</button>
           <button id="nbModeSketch" aria-pressed="false">Sketch</button>
@@ -887,7 +884,14 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
       </div>
       <div id="nbContent"></div>
     </div>
-    <div class="panelView" id="pv-studyroom" role="region" aria-label="Study Room"><div id="srContent"></div></div>
+  </div>
+</div>
+
+<!-- Study Room modal -->
+<div id="srOverlay" aria-hidden="true">
+  <div id="srModalCard" role="dialog" aria-modal="true" aria-label="Study Room">
+    <button id="srModalClose" title="Close" aria-label="Close Study Room window">✕</button>
+    <div id="srContent"></div>
   </div>
 </div>
 
@@ -915,7 +919,7 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
 
 <div id="selPop"></div>
 <div id="srChat" role="dialog" aria-label="Study Room chat" aria-hidden="true">
-  <div id="srChatHead"><span aria-hidden="true">💬</span><h4>Study Room Chat</h4><button class="srChatClose" id="srChatClose" aria-label="Close chat">✕</button></div>
+  <div id="srChatHead"><span aria-hidden="true"><svg class="ico sm" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H12l-4.6 3.6a.6.6 0 0 1-1-.47V16H6.5A2.5 2.5 0 0 1 4 13.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><h4>Study Room Chat</h4><button class="srChatClose" id="srChatClose" aria-label="Close chat">✕</button></div>
   <div id="srChatLog" role="log" aria-live="polite" aria-label="Chat messages"></div>
   <div id="srChatBox">
     <div id="srChatShare">
@@ -960,6 +964,37 @@ const S = {
   aiOK:false,
 };
 const LS='digibook_v1';
+const ICO={
+ speaker:'<svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 9.5v5H8l5 4.2V5.3L8 9.5H4.5z" fill="currentColor"/><path d="M16.2 8.6a4.7 4.7 0 0 1 0 6.8M18.9 6a8.4 8.4 0 0 1 0 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+ mic:'<svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9.2" y="3.5" width="5.6" height="10" rx="2.8" stroke="currentColor" stroke-width="1.8"/><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+ micSm:'<svg class="ico sm" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9.2" y="3.5" width="5.6" height="10" rx="2.8" stroke="currentColor" stroke-width="1.8"/><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+ chatSm:'<svg class="ico sm" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H12l-4.6 3.6a.6.6 0 0 1-1-.47V16H6.5A2.5 2.5 0 0 1 4 13.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+ book:'<svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 6.5C10.7 5.3 8.9 4.7 6.6 4.7c-1 0-1.9.1-2.6.3v13.6c.7-.2 1.6-.3 2.6-.3 2.3 0 4.1.6 5.4 1.8 1.3-1.2 3.1-1.8 5.4-1.8 1 0 1.9.1 2.6.3V5c-.7-.2-1.6-.3-2.6-.3-2.3 0-4.1.6-5.4 1.8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 6.5V20" stroke="currentColor" stroke-width="1.7"/></svg>',
+ pen:'<svg class="ico sm" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 19 .9-3.6L16.6 4.7a1.6 1.6 0 0 1 2.3 0l.4.4a1.6 1.6 0 0 1 0 2.3L8.6 18.1z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+ marker:'<svg class="ico sm" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m13.8 5.2 5 5L10 19H5v-5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m12 7 5 5" stroke="currentColor" stroke-width="1.8"/><path d="M4 21.5h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+ people:'<svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8.5" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.7-2.8 3-4.3 5.5-4.3s4.8 1.5 5.5 4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M15.5 5.9a3 3 0 0 1 0 5.2M17.8 14.9c1.4.7 2.4 2 2.8 3.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'
+};
+let raVisible=false;
+function updateRaBarVis(){
+  const bar=document.querySelector('#raBar');
+  if(bar)bar.style.display=(raVisible&&S.book&&document.querySelector('#reader').style.display!=='none')?'flex':'none';
+  const b=document.querySelector('#ttsBtn');
+  if(b){ b.classList.toggle('on',raVisible); b.setAttribute('aria-pressed',raVisible?'true':'false'); }
+}
+function setPanel(open){
+  document.body.classList.toggle('panel-open',open);
+  const b=document.querySelector('#panelBtn');
+  if(b){ b.classList.toggle('on',open); b.setAttribute('aria-pressed',open?'true':'false'); }
+  if(!open){
+    document.body.classList.remove('nb-left');
+    const nbv=document.querySelector('#pv-notebook');
+    if(nbv&&nbv.classList.contains('active')){
+      document.querySelectorAll('.panelView').forEach(v=>v.classList.toggle('active',v.id==='pv-learn'));
+      document.querySelectorAll('#panelTabs button').forEach(t=>{const on=t.dataset.tab==='learn';t.classList.toggle('active',on);t.setAttribute('aria-selected',on?'true':'false');});
+    }
+    if(document.body.classList.contains('focus-mode'))toggleFocus(false);
+  }
+}
 function save(){
   const d={concepts:S.concepts,stats:S.stats,graph:S.graph,cards:S.cards,
     adaptive:S.adaptive, srs:S.srs,
@@ -1392,7 +1427,7 @@ function reopenShelfItem(idx){
 function renderShelf(){
   const sh=JSON.parse(localStorage.getItem(LS+'_shelf')||'[]');
   const el=$('#shelf');
-  if(!sh.length){el.innerHTML='<h2>Recently opened</h2><div class="shelfEmpty"><span aria-hidden="true">📖</span> Your recently opened lessons and documents will appear here.</div>';return;}
+  if(!sh.length){el.innerHTML='<h2>Recently opened</h2><div class="shelfEmpty"><span aria-hidden="true">'+ICO.book+'</span> Your recently opened lessons and documents will appear here.</div>';return;}
   el.innerHTML='<div class="shelfHead"><h2>Recently opened</h2><button class="shelfClear" id="clearRecent">Clear</button></div>'+sh.map((x,i)=>{
     const can=x.reopenable && Array.isArray(x.pages);
     const sub=can ? `${x.type.toUpperCase()} · click to reopen`
@@ -1416,7 +1451,7 @@ function enterReader(){
   $('#reader').style.display='flex';
   $('#bookTitleBar').textContent=S.book.title;
   const fb=$('#focusBtn'); if(fb)fb.style.display='inline-flex';
-  const rb=$('#raBar'); if(rb)rb.style.display=(S.acx&&S.acx.readAloud)?'flex':'none';
+  updateRaBarVis();
   startReadTimer();
 }
 function goLibrary(){
@@ -1605,7 +1640,7 @@ function renderChat(){
   log.innerHTML=S.chat.map((m,i)=>{
     if(m.role==='sys')return `<div class="msg sys">${esc(m.content)}</div>`;
     const src=m.src==='offline'?`<span class="src">tutor offline - reconnect for a live answer</span>`:'';
-    const rd=(m.role==='ai'&&canRead)?`<button class="msgRead" data-i="${i}" aria-label="Read this response aloud"><span class="ri" aria-hidden="true">🔊</span> <span class="msgReadLbl">Read</span></button>`:'';
+    const rd=(m.role==='ai'&&canRead)?`<button class="msgRead" data-i="${i}" aria-label="Read this response aloud"><span class="ri" aria-hidden="true">${ICO.speaker}</span> <span class="msgReadLbl">Read</span></button>`:'';
     return `<div class="msg ${m.role==='user'?'user':'ai'}">${esc(m.content)}${src}${rd}</div>`;
   }).join('');
   log.querySelectorAll('.msgRead').forEach(b=>b.onclick=()=>{ const m=S.chat[+b.dataset.i]; if(m)raSpeakToggle(m.content, tutorLangCode(), b); });
@@ -1780,7 +1815,7 @@ function renderQuiz(){
   if(Q.done){ return renderQuizResult(); }
   const offNote=Q.offline?' <br><span style="color:var(--amber)">Built-in offline quiz (AI tutor is offline).</span>':'';
   const focusNote=(Q.focus&&Q.focus.length)?`<div class="card" style="border-left:3px solid var(--blue)"><h4>Adaptive focus</h4><p class="hint">Targeting concepts you're still building: <b>${Q.focus.map(esc).join(', ')}</b>. Answer well and they'll rise in your model.</p></div>`:'';
-  let html=`<div class="card"><h4>Quick quiz · ${Q.items.length} questions</h4><p class="hint">Answer each, then submit. Your results update your student model and knowledge graph.${offNote}</p>${S.acx&&S.acx.readAloud&&TTS_OK?'<button class="raMini" id="raQuiz"><span aria-hidden="true">🔊</span> Read quiz aloud</button>':''}</div>${focusNote}`;
+  let html=`<div class="card"><h4>Quick quiz · ${Q.items.length} questions</h4><p class="hint">Answer each, then submit. Your results update your student model and knowledge graph.${offNote}</p>${S.acx&&S.acx.readAloud&&TTS_OK?'<button class="raMini" id="raQuiz"><span aria-hidden="true">'+ICO.speaker+'</span> Read quiz aloud</button>':''}</div>${focusNote}`;
   Q.items.forEach((it,qi)=>{
     html+=`<div class="qCard" data-q="${qi}"><div class="qq">${qi+1}. ${esc(it.q)}</div>`;
     it.options.forEach((op,oi)=>{
@@ -2056,11 +2091,12 @@ function updateStats(){
 
 /* ============ Tabs ============ */
 function switchTab(name){
+  setPanel(true);
+  document.body.classList.remove('nb-left');
   $$('#panelTabs button').forEach(b=>{const on=b.dataset.tab===name;b.classList.toggle('active',on);b.setAttribute('role','tab');b.setAttribute('aria-selected',on?'true':'false');});
   $$('.panelView').forEach(v=>v.classList.toggle('active',v.id==='pv-'+name));
-  { const _nb=document.querySelector('#nbBtn'); if(_nb){_nb.classList.remove('on');_nb.setAttribute('aria-pressed','false');} if(typeof nbUI!=='undefined')nbUI.open=false; const _sr=document.querySelector('#srBtn'); if(_sr){_sr.classList.remove('on');_sr.setAttribute('aria-pressed','false');} }
+  { const _nb=document.querySelector('#nbBtn'); if(_nb){_nb.classList.remove('on');_nb.setAttribute('aria-pressed','false');} if(typeof nbUI!=='undefined')nbUI.open=false; }
   if(name==='progress')progressSub(S.progressSub||'mastery');
-  if(name==='about')renderAbout();
   if(name==='quiz' && !S.quiz)renderQuizIdle();
   announce(name.charAt(0).toUpperCase()+name.slice(1)+' tab.');
 }
@@ -2109,7 +2145,7 @@ function renderDemoLibrary(){
   const featHTML=feat?`<button class="demoTopic demoFeat" data-id="${feat.id}"><span aria-hidden="true">▶</span> Featured demo · ${esc(feat.title)}</button>`:'';
   menu.innerHTML=featHTML+DEMO_LIB.map(c=>`
     <div class="demoCat${c.future?' future':''}">
-      <h3>${c.icon?`<span aria-hidden="true">${c.icon}</span>`:''}${esc(c.subject)}${c.future?'<span class="fv">FUTURE VISION</span>':''}</h3>
+      <h3>${esc(c.subject)}${c.future?'<span class="fv">FUTURE VISION</span>':''}</h3>
       ${c.topics.map(t=>`<button class="demoTopic" data-id="${t.id}">${esc(t.title)}</button>`).join('')}
     </div>`).join('');
   menu.querySelectorAll('.demoTopic').forEach(b=>b.onclick=()=>{ closeDemoMenu(); loadDemo(b.dataset.id); });
@@ -2140,45 +2176,22 @@ function loadDemo(id){
 }
 /* ============ About (panel tab) ============ */
 function aboutBodyHTML(){
-  return `
-    <p class="aboutLede">DigiBook turns a static reading into an active lesson. Open a document or a demo lesson, then tap anything you don't understand and the app explains it, tutors you, checks what you've learned, captures your notes, and even lets you study live with a friend, all while keeping a visible map of your progress.</p>
-    <h3 class="aboutH">How it works</h3>
-    <ol class="aboutSteps">
-      <li><b>Open a document or lesson.</b> Drag in a PDF, DOCX, or TXT, or pick a ready-made lesson from the Demo Library. Everything is processed in your browser; only the passages you ask about are sent to the AI tutor.</li>
-      <li><b>Read your way.</b> Resize text, switch reading themes (light, sepia, dark), bookmark pages, highlight paragraphs, and have any page read aloud in a male or female voice. Read aloud follows the language of the text, so a Hindi, Chinese, Arabic, Korean, Japanese, or European-language passage is spoken in that language, not just English.</li>
-      <li><b>Select to learn.</b> Highlight a word or paragraph and choose Define, Explain simply, Translate, Summarize, Ask tutor, or Add to Notes, in any of nine languages.</li>
-      <li><b>Get tutored, not just told.</b> In Guide me mode the tutor asks guiding questions so you reason to the answer yourself. Switch to Just answer when you want it direct.</li>
-      <li><b>Capture what matters.</b> The Notebook keeps typed or dictated notes and hand-drawn sketches for each page, and can turn them straight into flashcards or a quiz.</li>
-      <li><b>Check your understanding.</b> Generate a quiz or flashcards from the page or your notes. Quiz results raise or lower your mastery scores.</li>
-      <li><b>See what you know and what is next.</b> Progress shows a mastery bar for every concept and a knowledge graph, and the Adaptive Learning Path recommends exactly what to review next.</li>
-      <li><b>Study together.</b> Open a Study Room to read the same page, take shared notes, draw together, chat, and talk by voice with a study buddy in real time.</li>
-    </ol>
-    <h3 class="aboutH">Study Notebook</h3>
-    <p class="hint">The Notebook button in the reader toolbar opens a shared workspace with two modes. Notes lets you type or dictate, pull in book passages with a Go to Source link, then ask DigiBook to explain or check them, or build flashcards and a quiz from them. Sketch is a simple canvas for equations, diagrams, and handwriting with pen, highlighter, and eraser. Everything autosaves for each book, and you can expand it to full screen with Focus mode.</p>
-    <h3 class="aboutH">Study Room: learn together</h3>
-    <p class="hint">A Study Room lets two or more students study the same material live. Create a room, share the code or link, then follow the presenter's page, take collaborative notes and sketches that show who wrote what, exchange quick chat messages, and talk over live audio. It stays a focused study space rather than a video call, and your private notebooks and progress are never shared, only the active room's content is.</p>
-    <h3 class="aboutH">Adaptive Learning Path</h3>
-    <p class="hint">DigiBook watches which concepts you struggle with across quizzes, tutor questions, and confusion signals, then ranks what to study next and tells you why, closing the loop between reading, practice, and review.</p>
-    <h3 class="aboutH">Accessibility and voice</h3>
-    <p class="hint"><b>Why it matters.</b> Learning materials should adapt to the reader, not the other way around. DigiBook builds accessibility into the reading experience itself, so a wider range of students can use the same lessons comfortably and independently instead of needing a separate, stripped-down version.</p>
-    <p class="hint"><b>How it works.</b> Open the Accessibility panel from the person icon in the top bar and switch on what you need: read aloud with a choice of a male or female voice and adjustable speed, in whichever of the nine supported languages the text is written, voice commands and voice dictation, high contrast, large or extra-large text, comfortable or spacious line and letter spacing, a dyslexia-friendly font, a reading ruler that dims everything except the line you point at, warm sepia or dark reading themes, reduced motion, and a full keyboard-shortcut list. Choices are remembered on your device, and screen-reader users hear page turns, quiz feedback, path updates, and study-room activity announced automatically. Every core task also works by keyboard alone, with a visible focus outline.</p>
-    <p class="hint"><b>Who it is for.</b> Students with dyslexia (easy-reading font, reading ruler, and read aloud), low vision (large text, high contrast, and a zoom-friendly layout), motor differences (large touch targets and full keyboard control, with the drawing canvas kept optional), attention differences (the ruler and reduced motion cut visual clutter), and English learners (read aloud paired with nine-language translation). It also simply helps anyone studying in a quiet library who wants to listen, or on a phone where typing by voice is easier. Nothing here is an afterthought: reading, tutoring, quizzes, notes, the Adaptive Learning Path, and Study Rooms can all be reached without a mouse and, where useful, without sight.</p>
-    <h3 class="aboutH">The main tabs</h3>
-    <ul class="aboutGrid">
-      <li><b>Learn</b><span>Read, then select any word or passage to define, explain, translate, or ask the Socratic tutor.</span></li>
-      <li><b>Quiz</b><span>Adaptive questions built from the page that target the concepts you're still building.</span></li>
-      <li><b>Progress</b><span>Your open student model, concept map, flashcards, stats, and Adaptive Learning Path together.</span></li>
-      <li><b>About</b><span>What DigiBook is, how it works, and its research roots.</span></li>
-    </ul>
-    <h3 class="aboutH">Why it is different from an e-reader</h3>
-    <p class="hint">An e-reader just displays text. DigiBook helps you understand it: instant explanations, a tutor that asks before it tells, notes and sketches you can keep, live study rooms, auto-generated quizzes and flashcards, and a mastery model that adapts what you practice next.</p>
-    <h3 class="aboutH">ARGOS connection</h3>
-    <p class="hint">DigiBook extends earlier ARGOS research on Socratic tutoring and open student modeling, bringing those ideas into a practical, everyday reading tool.</p>
-    <h3 class="aboutH">Demo mode, no login required</h3>
-    <p class="hint">The Demo Library ships ready-made lessons across Biology, Physics, Math, Computer Science, and a future-vision Practical Skills track. Progress is saved only in this browser; there are no accounts and nothing syncs between devices.</p>
-    <div class="aboutDisclaimer">DigiBook is an educational proof of concept developed by <b>Ansh Saini, a student at South Brunswick High School in New Jersey</b>. AI-generated explanations, translations, quizzes, and recommendations are intended to support learning and should not replace textbooks, teachers, or trusted academic resources.</div>`;
+ return `
+ <p class="aboutIntro">DigiBook turns a static reading into an active lesson. Open a document, tap what you don't understand, and it explains, tutors, quizzes you, and keeps a visible map of what you've mastered.</p>
+ <h3 class="aboutH">How it works</h3>
+ <ul class="aboutList">
+  <li><b>Open a document.</b> Drag in a PDF, DOCX, or TXT, or pick a lesson from the Demo Library. Everything is processed in your browser; only the passages you ask about are sent to the AI tutor.</li>
+  <li><b>Select to learn.</b> Highlight a word or paragraph and choose Define, Explain simply, Translate, Summarize, Ask tutor, or Add to Notes — in any of nine languages.</li>
+  <li><b>Get tutored, not told.</b> In Guide me mode the tutor asks guiding questions so you reason to the answer yourself; Just answer is direct.</li>
+  <li><b>Practice.</b> Generate quizzes and flashcards from the page or your notes. Results raise or lower your concept mastery.</li>
+  <li><b>See what's next.</b> Progress shows mastery for every concept, a knowledge graph, and an Adaptive Learning Path that recommends what to review — and tells you why.</li>
+ </ul>
+ <h3 class="aboutH">Study tools</h3>
+ <p class="hint">The <b>Notebook</b> keeps typed, dictated, or sketched notes for each page and can turn them into flashcards or a quiz. A <b>Study Room</b> lets you read the same page, share notes and sketches, chat, and talk live with a study buddy — your private notes and progress are never shared.</p>
+ <h3 class="aboutH">Accessibility</h3>
+ <p class="hint">Open the accessibility panel from the top bar: read aloud in nine languages, voice commands and dictation, high contrast, large text, spacing, a dyslexia-friendly font, a reading ruler, reading themes, reduced motion, and full keyboard support. Choices are remembered on your device.</p>
+ <p class="hint">No accounts — progress lives only in this browser. DigiBook is an educational proof of concept by Ansh Saini, a student at South Brunswick High School, New Jersey. It extends earlier ARGOS research on Socratic tutoring and open student modeling. AI-generated content supports learning and should not replace textbooks or teachers.</p>`;
 }
-function renderAbout(){ const pad=$('#aboutPad'); if(pad)pad.innerHTML=aboutBodyHTML(); }
 function openHowItWorks(){ const p=$('#aboutModalPad'); if(p)p.innerHTML=aboutBodyHTML(); const o=$('#aboutOverlay'); o.classList.add('open'); o.setAttribute('aria-hidden','false'); }
 function closeHowItWorks(){ const o=$('#aboutOverlay'); o.classList.remove('open'); o.setAttribute('aria-hidden','true'); }
 
@@ -2273,7 +2286,7 @@ function aRing(pct,band){
   const off=C*(1-(pct/100));
   return `<svg width="58" height="58" viewBox="0 0 58 58" class="aRing"><circle cx="29" cy="29" r="${r}" fill="none" stroke="var(--line)" stroke-width="6"/><circle cx="29" cy="29" r="${r}" fill="none" stroke="${col}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 29 29)"/><text x="29" y="27" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">${Math.round(pct)}%</text><text x="29" y="39" text-anchor="middle" font-size="7.5" fill="var(--ink-soft)">Mastery</text></svg>`;
 }
-function aStepIco(t){ return t==='Review'?'📖':t==='Practice'?'✍️':t==='Connect'?'🔗':'🌍'; }
+function aStepIco(t){ return t==='Review'?'▸':t==='Practice'?'✎':t==='Connect'?'⇄':'➤'; }
 
 function renderAdaptive(){
   const pad=$('#adaptivePad'); if(!pad)return;
@@ -2316,7 +2329,7 @@ function renderAdaptive(){
         <div class="aMeta">⏱ About ${lessonMin} min</div>
       </div>
     </div>
-    ${S.acx&&S.acx.readAloud&&TTS_OK?`<button class="raMini" id="raNext2" style="margin-right:8px"><span aria-hidden="true">🔊</span> Read</button>`:''}<button class="btn aStart" id="aStart"><span aria-hidden="true">▶</span> Start now</button></div>`;
+    ${S.acx&&S.acx.readAloud&&TTS_OK?`<button class="raMini" id="raNext2" style="margin-right:8px"><span aria-hidden="true">${ICO.speaker}</span> Read</button>`:''}<button class="btn aStart" id="aStart"><span aria-hidden="true">▶</span> Start now</button></div>`;
 
   // WHY THIS STEP
   h+=`<div class="card aWhy"><h3 class="aH5">Why DigiBook chose this</h3><ul class="aSignals">${reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>
@@ -2484,12 +2497,13 @@ function toggleFocus(force){
   const sc=$('#readerScroll');
   if(on && sc) S._scrollTop=sc.scrollTop;                 // remember reading position
   document.body.classList.toggle('focus-mode',on);
+  if(on)setPanel(true);
   const rc=$('#readerCol'),pn=$('#panel');
   if(rc)rc.setAttribute('role',on?'presentation':'main');
   if(pn)pn.setAttribute('role',on?'main':'complementary');
   announce(on?'Focus mode. Learning workspace expanded.':'Split view. Document reader and learning tools visible.');
   const fb=$('#focusBtn');
-  if(fb){ fb.innerHTML=on?'<span aria-hidden="true">📖</span> Back to Reader':'<span aria-hidden="true">⛶</span> Expand';
+  if(fb){ fb.innerHTML=on?'<span aria-hidden="true">'+ICO.book+'</span> Back to Reader':'<span aria-hidden="true">⛶</span> Expand';
     fb.setAttribute('aria-label',on?'Back to reader':'Expand workspace'); fb.setAttribute('aria-pressed',on?'true':'false'); }
   if(!on && sc && S._scrollTop!=null) sc.scrollTop=S._scrollTop;   // restore reading position
   if($('#pv-progress')&&$('#pv-progress').classList.contains('active') && S.progressSub==='map') setTimeout(renderGraph,40);
@@ -2648,7 +2662,7 @@ function applyAcx(){
   document.body.classList.toggle('acx-space-spacious',a.spacing==='spacious');
   readFS = a.textSize==='xlarge'?26:a.textSize==='large'?23:19;
   document.documentElement.style.setProperty('--readfs',readFS+'px');
-  const bar=$('#raBar'); if(bar) bar.style.display=(a.readAloud && S.book && $('#reader').style.display!=='none')?'flex':'none';
+  updateRaBarVis();
   if(!a.readAloud) raStop();
   if(a.voiceCommands && SR_OK) vcStart(); else vcStop();
   if($('#chatLog')) renderChat();
@@ -2696,6 +2710,13 @@ function renderAcxPanel(){
         <button data-lv="standard" class="${lv==='standard'?'on':''}" aria-pressed="${lv==='standard'}">Standard</button>
         <button data-lv="advanced" class="${lv==='advanced'?'on':''}" aria-pressed="${lv==='advanced'}">Advanced</button>
       </span></div>
+    <div class="acxRow"><span class="acxRowText"><span class="acxLabel">Explanation language</span><span class="acxNote">Language for definitions, translations and the tutor</span></span>
+      <span id="acxLangHost"></span></div>
+    <div class="acxRow"><span class="acxRowText"><span class="acxLabel">Document text size</span><span class="acxNote">Size of the book text in the reader</span></span>
+      <span class="acxSeg acxFs" role="group" aria-label="Document text size">
+        <button id="acxFsMinus" aria-label="Smaller document text">A−</button>
+        <button id="acxFsPlus" aria-label="Larger document text">A+</button>
+      </span></div>
     <h2 class="aboutH">Motor &amp; Mobility</h2>
     ${acxSwitch('easyInteraction','Easy interaction mode',false,'Bigger buttons, more spacing, clearer labels')}
     ${acxSwitch('voiceCommands','Voice commands',!SR_OK,SR_OK?'Navigate and answer by speaking':'Not available in this browser')}
@@ -2728,6 +2749,14 @@ function renderAcxPanel(){
   pad.querySelectorAll('.acxSpace button').forEach(b=>{ b.onclick=()=>{ S.acx.spacing=b.dataset.sp; acxSave(); applyAcx(); renderAcxPanel(); announce('Reading spacing '+b.dataset.sp); }; });
   pad.querySelectorAll('.acxTheme button').forEach(b=>{ b.onclick=()=>{ document.body.dataset.theme=b.dataset.th; localStorage.setItem(LS+'_theme',b.dataset.th); if(S.graph)renderGraph(); renderAcxPanel(); announce('Reading theme '+b.dataset.th); }; });
   pad.querySelectorAll('.acxLevel button').forEach(b=>{ b.onclick=()=>{ S.level=b.dataset.lv; localStorage.setItem(LS+'_level',S.level); const ls=$('#levelSel'); if(ls)ls.value=S.level; renderAcxPanel(); announce('Explanation level '+S.level); }; });
+  { const lh=pad.querySelector('#acxLangHost'), src=$('#langSel');
+    if(lh&&src){ const sel=document.createElement('select'); sel.className='ctl'; sel.setAttribute('aria-label','Explanation language');
+      sel.innerHTML=src.innerHTML; sel.value=src.value;
+      sel.onchange=()=>{ src.value=sel.value; announce('Explanation language '+sel.value); };
+      lh.appendChild(sel); }
+    const fm=pad.querySelector('#acxFsMinus'), fp=pad.querySelector('#acxFsPlus');
+    if(fm)fm.onclick=()=>{ readFS=Math.max(14,readFS-1); document.documentElement.style.setProperty('--readfs',readFS+'px'); announce('Document text smaller'); };
+    if(fp)fp.onclick=()=>{ readFS=Math.min(30,readFS+1); document.documentElement.style.setProperty('--readfs',readFS+'px'); announce('Document text larger'); }; }
   const kb=$('#acxKeysBtn'); if(kb)kb.onclick=()=>{ const el=$('#acxKeys'); const hid=el.hasAttribute('hidden'); if(hid){el.removeAttribute('hidden');kb.setAttribute('aria-expanded','true');}else{el.setAttribute('hidden','');kb.setAttribute('aria-expanded','false');} };
   const g=$('#acxGuideBtn'); if(g)g.onclick=()=>{ const el=$('#acxGuide'); const hidden=el.hasAttribute('hidden'); if(hidden){el.removeAttribute('hidden');g.setAttribute('aria-expanded','true');}else{el.setAttribute('hidden','');g.setAttribute('aria-expanded','false');} };
   syncVoiceControls();
@@ -2781,7 +2810,7 @@ function _raBtnSet(btn,on){
   if(!btn)return;
   btn.classList.toggle('speaking',on);
   const lbl=btn.querySelector('.msgReadLbl'); if(lbl) lbl.textContent=on?'Stop':'Read';
-  const ic=btn.querySelector('.ri'); if(ic) ic.textContent=on?'⏹':'🔊';
+  const ic=btn.querySelector('.ri'); if(ic) ic.innerHTML=on?'■':ICO.speaker;
   btn.setAttribute('aria-label',on?'Stop reading':'Read this response aloud');
 }
 function raStopOnce(){ try{TTS.cancel();}catch(e){} if(_raOnceBtn){ _raBtnSet(_raOnceBtn,false); _raOnceBtn=null; } }
@@ -2826,7 +2855,6 @@ function vcSelectAnswer(oi){ const cards=[...document.querySelectorAll('.qCard')
 function vcHandle(t){
   const has=(...w)=>w.some(x=>t.includes(x));
   if(has('open learn','go to learn'))return switchTab('learn');
-  if(has('open about'))return switchTab('about');
   if(has('adaptive path','adaptive lesson','open adaptive'))return (switchTab('progress'),progressSub('adaptive'));
   if(has('concept map','open map','show map'))return (switchTab('progress'),progressSub('map'));
   if(has('open cards','flash cards','flashcards'))return (switchTab('progress'),progressSub('cards'));
@@ -2886,9 +2914,10 @@ function nbDoc(){ const k=nbDocKey(); if(!k)return null; if(!nbData.docs[k])nbDa
 function nbSourceLabel(){ return 'From '+(S.book?S.book.title:'this book')+', Page '+((S.page||0)+1); }
 function nbUid(p){ return (p||'s')+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
 
-function nbToggle(){ if(nbUI.open && $('#pv-notebook') && $('#pv-notebook').classList.contains('active')) switchTab('learn'); else openNotebook(); }
+function nbToggle(){ if(nbUI.open && $('#pv-notebook') && $('#pv-notebook').classList.contains('active')){ switchTab('learn'); setPanel(false); } else openNotebook(); }
 function openNotebook(mode,scope){
   nbUI.open=true; if(mode)nbUI.mode=mode; if(scope)nbUI.scope=scope;
+  setPanel(true); document.body.classList.add('nb-left');
   $$('#panelTabs button').forEach(b=>{ b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
   $$('.panelView').forEach(v=>v.classList.toggle('active',v.id==='pv-notebook'));
   const nb=$('#nbBtn'); if(nb){ nb.classList.add('on'); nb.setAttribute('aria-pressed','true'); }
@@ -2923,12 +2952,12 @@ function nbNotesToolbar(){
     +'<span class="sepx" aria-hidden="true"></span>'
     +'<button type="button" data-cmd="ul" title="Bulleted list" aria-label="Bulleted list">&bull;</button>'
     +'<button type="button" data-cmd="ol" title="Numbered list" aria-label="Numbered list">1.</button>'
-    +'<button type="button" data-cmd="hl" title="Highlight" aria-label="Highlight"><span aria-hidden="true">🖍</span></button>'
+    +'<button type="button" data-cmd="hl" title="Highlight" aria-label="Highlight"><span aria-hidden="true">'+ICO.marker+'</span></button>'
     +'<span class="sepx" aria-hidden="true"></span>'
     +'<button type="button" data-cmd="undo" title="Undo" aria-label="Undo">&#8630;</button>'
     +'<button type="button" data-cmd="redo" title="Redo" aria-label="Redo">&#8631;</button>'
     +'<span class="sepx" aria-hidden="true"></span>'
-    +'<button type="button" id="nbDictateBtn" title="Dictate notes" aria-label="Dictate notes"><span aria-hidden="true">🎤</span> Dictate</button>'
+    +'<button type="button" id="nbDictateBtn" title="Dictate notes" aria-label="Dictate notes"><span aria-hidden="true">'+ICO.micSm+'</span> Dictate</button>'
     +'</div>';
 }
 function nbRenderNotes(){
@@ -3048,11 +3077,11 @@ function nbToggleDictate(){
   if(nbRec){ try{ nbRec.stop(); }catch(e){} return; }
   try{ nbRec=new SR_CLASS(); }catch(e){ return; }
   nbRec.lang='en-US'; nbRec.interimResults=false; nbRec.continuous=true;
-  if(btn){ btn.classList.add('on'); btn.innerHTML='<span aria-hidden="true">🎤</span> Listening…'; }
+  if(btn){ btn.classList.add('on'); btn.innerHTML='<span aria-hidden="true">'+ICO.micSm+'</span> Listening…'; }
   announce('Listening. Speak your note.');
   nbRec.onresult=(e)=>{ let txt=''; for(let i=e.resultIndex;i<e.results.length;i++){ if(e.results[i].isFinal) txt+=e.results[i][0].transcript; } if(txt){ const ed=$('#nbEditor'); if(ed){ ed.focus(); try{ document.execCommand('insertText',false, txt.replace(/\s+$/,'')+' '); }catch(_){} nbPersistNotes(); } } };
   nbRec.onerror=()=>{};
-  nbRec.onend=()=>{ nbRec=null; const b=$('#nbDictateBtn'); if(b){ b.classList.remove('on'); b.innerHTML='<span aria-hidden="true">🎤</span> Dictate'; } };
+  nbRec.onend=()=>{ nbRec=null; const b=$('#nbDictateBtn'); if(b){ b.classList.remove('on'); b.innerHTML='<span aria-hidden="true">'+ICO.micSm+'</span> Dictate'; } };
   try{ nbRec.start(); }catch(e){ nbRec=null; }
 }
 
@@ -3063,8 +3092,8 @@ function nbRenderSketch(){
   const strip = mine.length ? '<div class="nbSkStrip" role="group" aria-label="Saved sketches on this page">'+mine.map(s=>'<button class="nbSkThumb" data-id="'+s.id+'" title="Edit this sketch" aria-label="Edit saved sketch"><img src="'+s.preview+'" alt=""></button>').join('')+'<button class="nbSkNew" id="nbSkNew">+ New</button></div>' : '';
   c.innerHTML='<div id="nbSketchWrap">'
     +'<div id="nbSketchTools" role="toolbar" aria-label="Sketch tools">'
-    +'<button type="button" data-tool="pen" class="on" aria-pressed="true" aria-label="Pen"><span aria-hidden="true">✏️</span> Pen</button>'
-    +'<button type="button" data-tool="hi" aria-pressed="false" aria-label="Highlighter"><span aria-hidden="true">🖍</span> Highlighter</button>'
+    +'<button type="button" data-tool="pen" class="on" aria-pressed="true" aria-label="Pen"><span aria-hidden="true">'+ICO.pen+'</span> Pen</button>'
+    +'<button type="button" data-tool="hi" aria-pressed="false" aria-label="Highlighter"><span aria-hidden="true">'+ICO.marker+'</span> Highlighter</button>'
     +'<button type="button" data-tool="eraser" aria-pressed="false" aria-label="Eraser">Eraser</button>'
     +'<span class="nbSize" role="group" aria-label="Pen thickness"><button type="button" data-size="2" aria-label="Thin">&#183;</button><button type="button" data-size="4" class="on" aria-label="Medium">&#9679;</button><button type="button" data-size="7" aria-label="Thick">&#11044;</button></span>'
     +'<span class="nbSize" role="group" aria-label="Pen color"><button type="button" data-color="#1b2733" class="on" aria-label="Dark ink">&#11035;</button><button type="button" data-color="#2F5E7E" aria-label="Blue">&#128998;</button><button type="button" data-color="#B23B3B" aria-label="Red">&#128997;</button></span>'
@@ -3234,16 +3263,17 @@ function srInitials(name){ const p=(name||'').trim().split(/\s+/).filter(Boolean
 function srInviteLink(code){ return location.origin+location.pathname+'?studyroom='+code; }
 
 /* ---------- Open / toggle panel ---------- */
-function srToggle(){ if(srUIOpen()) switchTab('learn'); else openStudyRoom(); }
-function srUIOpen(){ const p=$('#pv-studyroom'); return p&&p.classList.contains('active'); }
+function srToggle(){ if(srUIOpen()) closeStudyRoomUI(); else openStudyRoom(); }
+function srUIOpen(){ const o=$('#srOverlay'); return !!(o&&o.classList.contains('open')); }
 function openStudyRoom(prefillCode){
-  $$('#panelTabs button').forEach(b=>{ b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
-  $$('.panelView').forEach(v=>v.classList.toggle('active',v.id==='pv-studyroom'));
+  const o=$('#srOverlay'); if(o){ o.classList.add('open'); o.setAttribute('aria-hidden','false'); }
   const b=$('#srBtn'); if(b){ b.classList.add('on'); b.setAttribute('aria-pressed','true'); }
-  const _nb=$('#nbBtn'); if(_nb){ _nb.classList.remove('on'); _nb.setAttribute('aria-pressed','false'); }
   srRender(prefillCode);
-  if(window.innerWidth<=860) toggleFocus(true);
   announce('Study Room.');
+}
+function closeStudyRoomUI(){
+  const o=$('#srOverlay'); if(o){ o.classList.remove('open'); o.setAttribute('aria-hidden','true'); }
+  srClearBtn();
 }
 function srClearBtn(){ const b=$('#srBtn'); if(b){ b.classList.remove('on'); b.setAttribute('aria-pressed','false'); } }
 
@@ -3252,13 +3282,13 @@ function srRender(prefillCode){
   const c=$('#srContent'); if(!c) return;
   if(srState.active){ srRenderActivePanel(); return; }
   if(!srConfigured()){
-    c.innerHTML='<div class="srHero"><div class="srIco" aria-hidden="true">👥</div><h3>Study Room</h3>'
+    c.innerHTML='<div class="srHero"><div class="srIco" aria-hidden="true">'+ICO.people+'</div><h3>Study Room</h3>'
       +'<p>Live Study Room turns on once DigiBook is connected to its realtime service. If you are the owner, add your Firebase config to enable it.</p>'
       +'<p class="srNote">Everything else in DigiBook keeps working normally.</p></div>';
     return;
   }
   const showJoin = !!prefillCode;
-  c.innerHTML='<div class="srHero"><div class="srIco" aria-hidden="true">👥</div><h3>Study Room</h3>'
+  c.innerHTML='<div class="srHero"><div class="srIco" aria-hidden="true">'+ICO.people+'</div><h3>Study Room</h3>'
     +'<p>Study together in the same reader, notebook and sketch space.</p>'
     +'<div class="srBtns"><button class="btn" id="srCreateBtn">Create Room</button><button class="btn ghost" id="srJoinToggle">Join Room</button></div></div>'
     +'<div class="srCard" id="srCreateCard" style="display:none;margin-top:16px">'
@@ -3282,7 +3312,7 @@ function srRender(prefillCode){
 function srRenderActivePanel(){
   const c=$('#srContent'); const link=srInviteLink(srState.roomCode);
   c.innerHTML='<div class="srCard" style="margin-top:6px">'
-    +'<div style="font-size:12px;font-weight:700;color:var(--green)">👥 Study Room Active</div>'
+    +'<div style="font-size:12px;font-weight:700;color:var(--green)">Study Room Active</div>'
     +'<label class="srField">Room code</label><div class="srCode">'+esc(srState.roomCode)+'</div>'
     +'<div class="srRow"><button class="btn ghost" id="srCopyLink">Copy Invite Link</button><button class="btn ghost" id="srCopyCode">Copy Room Code</button></div>'
     +'<p class="srNote">Share the code or link with a study buddy. Changes in shared Notes and Sketch are visible to everyone in the room. Your personal notebooks, progress and settings are not shared.</p>'
@@ -3406,9 +3436,9 @@ function srRenderBar(){
       fb.textContent = on ? (behind?'Return to '+srPresenterName():'Following '+srPresenterName()) : 'Follow '+srPresenterName();
       fb.classList.toggle('on',on); fb.setAttribute('aria-pressed',on?'true':'false'); }
   }
-  const cbtn=$('#srChatBtn'); if(cbtn) cbtn.innerHTML='💬 Chat'+(srState.unread?' <span class="srBadge">'+srState.unread+'</span>':'');
-  const tb=$('#srTalkBtn'); if(tb){ const on=(typeof srAudio!=='undefined'&&srAudio.on); tb.innerHTML=on?'🎙 In audio':'🎙 Talk'; tb.classList.toggle('on',on); tb.setAttribute('aria-pressed',on?'true':'false'); }
-  if(typeof srAudio!=='undefined'){ let mute=$('#srMuteBtn'); if(!mute&&tb&&tb.parentNode){ mute=document.createElement('button'); mute.id='srMuteBtn'; mute.type='button'; mute.className='srBtnMini'; mute.onclick=srToggleMute; tb.parentNode.insertBefore(mute, tb.nextSibling); } if(mute){ mute.style.display=srAudio.on?'inline-flex':'none'; mute.innerHTML=srAudio.muted?'🔇 Unmute':'🔊 Mute'; mute.classList.toggle('on',srAudio.muted); mute.setAttribute('aria-label',srAudio.muted?'Unmute microphone':'Mute microphone'); } }
+  const cbtn=$('#srChatBtn'); if(cbtn) cbtn.innerHTML=ICO.chatSm+' Chat'+(srState.unread?' <span class="srBadge">'+srState.unread+'</span>':'');
+  const tb=$('#srTalkBtn'); if(tb){ const on=(typeof srAudio!=='undefined'&&srAudio.on); tb.innerHTML=on?ICO.micSm+' In audio':ICO.micSm+' Talk'; tb.classList.toggle('on',on); tb.setAttribute('aria-pressed',on?'true':'false'); }
+  if(typeof srAudio!=='undefined'){ let mute=$('#srMuteBtn'); if(!mute&&tb&&tb.parentNode){ mute=document.createElement('button'); mute.id='srMuteBtn'; mute.type='button'; mute.className='srBtnMini'; mute.onclick=srToggleMute; tb.parentNode.insertBefore(mute, tb.nextSibling); } if(mute){ mute.style.display=srAudio.on?'inline-flex':'none'; mute.innerHTML=srAudio.muted?'Unmute':'Mute'; mute.classList.toggle('on',srAudio.muted); mute.setAttribute('aria-label',srAudio.muted?'Unmute microphone':'Mute microphone'); } }
 }
 function srRenderMoreMenu(){
   const m=$('#srMoreMenu'); if(!m) return;
@@ -3461,9 +3491,9 @@ function srRenderChatMsg(key,msg){
   const when=msg.ts?srFmtTime(msg.ts):'';
   let refHtml='';
   if(msg.ref){ const r=msg.ref; let label='Shared';
-    if(r.type==='page') label='📄 Page '+((r.page|0)+1)+(r.title?' · '+esc(r.title):'');
-    else if(r.type==='note') label='📝 Notebook note';
-    else if(r.type==='sketch') label='✏️ Sketch';
+    if(r.type==='page') label='Page '+((r.page|0)+1)+(r.title?' · '+esc(r.title):'');
+    else if(r.type==='note') label='Notebook note';
+    else if(r.type==='sketch') label='Sketch';
     else if(r.type==='passage') label='“'+esc((r.text||'').slice(0,60))+'”';
     refHtml='<span class="srRef" data-ref=\''+esc(JSON.stringify(r))+'\'>'+label+'</span>';
   }
@@ -3510,6 +3540,9 @@ function srReset(){
 /* ---------- Init ---------- */
 function srInit(){
   const b=$('#srBtn'); if(b)b.onclick=srToggle;
+  const mc=$('#srModalClose'); if(mc)mc.onclick=closeStudyRoomUI;
+  const ov=$('#srOverlay'); if(ov)ov.addEventListener('click',e=>{ if(e.target.id==='srOverlay')closeStudyRoomUI(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&srUIOpen())closeStudyRoomUI(); });
   if(!srConfigured()){ if(b)b.style.display='none'; return; }
   const fbtn=$('#srFollowBtn'); if(fbtn)fbtn.onclick=srToggleFollow;
   const cbtn=$('#srChatBtn'); if(cbtn)cbtn.onclick=()=>{ if(srState.chatOpen)srCloseChat(); else srOpenChat(); };
@@ -3592,7 +3625,7 @@ function nbRenderSharedNotes(){
   c.innerHTML='<div class="srNotesHead"><span class="srLive" id="srLive2"></span></div>'
     +'<div class="nbEditWrap"><div id="srNotesList">'+blocks+'</div></div>'
     +(canEdit?('<div class="srCompose"><textarea id="srNoteInput" rows="2" placeholder="Add a note for the room…" aria-label="Add a shared note"></textarea>'
-      +'<div class="srComposeRow"><button class="btn ghost" id="srNoteDictate" title="Dictate" aria-label="Dictate note">🎤</button><button class="btn" id="srNoteAdd">Add note</button></div></div>'):'')
+      +'<div class="srComposeRow"><button class="btn ghost" id="srNoteDictate" title="Dictate" aria-label="Dictate note">'+ICO.micSm+'</button><button class="btn" id="srNoteAdd">Add note</button></div></div>'):'')
     +'<div class="nbActions">'
       +'<span class="nbAsk"><button class="btn ghost" id="nbAskBtn" aria-haspopup="true" aria-expanded="false">Ask DigiBook &#9662;</button>'
       +'<div class="nbAskMenu" id="nbAskMenu" role="menu"><button role="menuitem" data-k="explain">Explain this</button><button role="menuitem" data-k="check">Check our solution</button><button role="menuitem" data-k="summarize">Summarize</button><button role="menuitem" data-k="missing">What are we missing?</button></div></span>'
@@ -3804,15 +3837,15 @@ function srLeaveAudio(silent){
 $('#pickBtn').onclick=()=>$('#fileInput').click();
 $('#fileInput').onchange=e=>{ if(e.target.files[0])openFile(e.target.files[0]); };
 $('#demoBtn').onclick=(e)=>{ e.stopPropagation(); toggleDemoMenu(); };
-$('#playDemo').onclick=()=>loadDemo(DEFAULT_DEMO);
 document.addEventListener('mousedown',e=>{ if(!closestOf(e.target,'#demoMenu')&&!closestOf(e.target,'#demoBtn'))closeDemoMenu(); });
 const dz=$('#dropzone');
 ['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));
 ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));
 dz.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f)openFile(f); });
 
-$('#homeBtn').onclick=goLibrary;
 $('#homeBrand').onclick=goLibrary;
+$('#panelBtn').onclick=()=>{ const open=!document.body.classList.contains('panel-open'); setPanel(open); announce(open?'Learning tools opened.':'Learning tools closed.'); };
+$('#ttsBtn').onclick=()=>{ raVisible=!raVisible; updateRaBarVis(); announce(raVisible?'Read aloud controls shown.':'Read aloud controls hidden.'); };
 $('#focusBtn').onclick=()=>toggleFocus();
 $('#exitReadBtn').onclick=goLibrary;
 $('#acxBtn').onclick=openAcx;
@@ -3827,9 +3860,7 @@ $('#prevBtn').onclick=()=>gotoPage(S.page-1);
 $('#nextBtn').onclick=()=>gotoPage(S.page+1);
 $('#bmBtn').onclick=toggleBookmark;
 $('#hlModeBtn').onclick=toggleHLMode;
-$('#readFontBtn').onclick=toggleReadFont;
 $('#levelSel').onchange=e=>{ S.level=e.target.value; localStorage.setItem(LS+'_level',S.level); };
-$('#quizPageBtn').onclick=generateQuiz;
 $('#buildGraphBtn').onclick=buildGraph;
 
 /* About now lives in its own panel tab. */
@@ -3847,18 +3878,14 @@ $('#chatInput').addEventListener('input',e=>{e.target.style.height='auto';e.targ
 $('#modeSocratic').onclick=()=>{S.socratic=true;$('#modeSocratic').classList.add('on');$('#modeDirect').classList.remove('on');};
 $('#modeDirect').onclick=()=>{S.socratic=false;$('#modeDirect').classList.add('on');$('#modeSocratic').classList.remove('on');};
 
-$('#themeBtn').onclick=()=>{ const b=document.body; b.dataset.theme=b.dataset.theme==='dark'?'light':'dark';
-  localStorage.setItem(LS+'_theme',b.dataset.theme); if(S.graph)renderGraph(); };
 let readFS=19;
-$('#fsPlus').onclick=()=>{readFS=Math.min(30,readFS+1);document.documentElement.style.setProperty('--readfs',readFS+'px');};
-$('#fsMinus').onclick=()=>{readFS=Math.max(14,readFS-1);document.documentElement.style.setProperty('--readfs',readFS+'px');};
 
 /* ============ Init ============ */
 (function init(){
   const th=localStorage.getItem(LS+'_theme'); if(th)document.body.dataset.theme=th;
   if(localStorage.getItem(LS+'_read')==='easy'){ document.body.dataset.read='easy'; const rb=$('#readFontBtn'); if(rb){rb.setAttribute('aria-pressed','true');rb.style.background='var(--hl)';rb.style.color='#22303F';} }
   const _lv=localStorage.getItem(LS+'_level'); if(_lv){ S.level=_lv; const ls=$('#levelSel'); if(ls)ls.value=_lv; }
-  load(); renderChat(); renderModel(); renderShelf(); renderDemoLibrary(); renderAbout(); updateStats(); renderCards(); renderGraph(); renderQuizIdle();
+  load(); renderChat(); renderModel(); renderShelf(); renderDemoLibrary(); updateStats(); renderCards(); renderGraph(); renderQuizIdle();
   // ping AI proxy quietly to set pill
   fetch('/.netlify/functions/ai-proxy').then(r=>r.json()).then(d=>setAI(!!(d&&d.ok&&d.keyConfigured))).catch(()=>setAI(false));
   document.documentElement.style.setProperty('--readfs',readFS+'px');
