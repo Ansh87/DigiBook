@@ -6,12 +6,19 @@
 // last-resort fallbacks in case a given key/region still serves them, but
 // the current GA models are tried first.
 
-const MODELS = [
-  'gemini-2.5-flash',                     // widely available, stable
-  'gemini-2.0-flash',                     // broad fallback
+// Override the chain from Netlify without touching code: set the GEMINI_MODELS
+// environment variable to a comma-separated list, highest priority first,
+// e.g.  GEMINI_MODELS=gemini-3-flash,gemini-3.5-flash   then redeploy.
+const DEFAULT_MODELS = [
+  'gemini-3-flash',                       // best free-tier daily quota
+  'gemini-3.5-flash',                     // newer flash fallback
   'gemini-flash-latest',                  // alias that tracks the current flash
-  'gemini-2.5-flash-lite',                // lite fallback (non-preview name)
+  'gemini-2.5-flash-lite',                // lite fallback, generous limits
 ];
+const MODELS = (process.env.GEMINI_MODELS || '')
+  .split(',').map((m) => m.trim()).filter(Boolean).length
+  ? process.env.GEMINI_MODELS.split(',').map((m) => m.trim()).filter(Boolean)
+  : DEFAULT_MODELS;
 
 exports.handler = async (event) => {
   const headers = {
@@ -64,13 +71,13 @@ exports.handler = async (event) => {
         temperature: json ? 0.3 : 0.6,
         // Raised from 900. Structured (JSON) generations need more room, and the
         // 2.5 "thinking" models spend part of the budget before producing output.
-        maxOutputTokens: json ? 2048 : 1200,
+        maxOutputTokens: json ? 4096 : 1200,
         ...(json ? { responseMimeType: 'application/json' } : {}),
       };
       // Gemini 2.5 models default to "thinking", which can consume the whole output
       // budget and return EMPTY text — the reason quiz/cards/graph silently fell back
       // to offline mode even when the tutor was Live. Turn thinking off for these.
-      if (/2\.5/.test(model)) genConfig.thinkingConfig = { thinkingBudget: 0 };
+      if (/2\.5|-latest/.test(model)) genConfig.thinkingConfig = { thinkingBudget: 0 };
 
       const payload = {
         systemInstruction: system ? { parts: [{ text: system }] } : undefined,
@@ -97,6 +104,22 @@ exports.handler = async (event) => {
         lastErr = `${model} -> empty response`;
         console.log('[ai-proxy] ' + lastErr);
         continue;
+      }
+      if (json) {
+        // The quiz/cards/graph callers need parseable JSON. If this model returned
+        // prose or a truncated object, fall through to the next model instead of
+        // handing the browser something it will silently reject.
+        const stripped = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+        let ok = false;
+        try { JSON.parse(stripped); ok = true; } catch (e) {
+          const m = stripped.match(/[\[{][\s\S]*[\]}]/);
+          if (m) { try { JSON.parse(m[0]); ok = true; } catch (e2) {} }
+        }
+        if (!ok) {
+          lastErr = `${model} -> unparseable JSON (${stripped.slice(0, 80)}...)`;
+          console.log('[ai-proxy] ' + lastErr);
+          continue;
+        }
       }
       console.log('[ai-proxy] served by ' + model);
       return { statusCode: 200, headers, body: JSON.stringify({ text, model }) };
