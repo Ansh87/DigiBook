@@ -798,7 +798,7 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
     <div id="panelTop">
       <div id="panelTabs" role="tablist" aria-label="Panel views">
         <button data-tab="learn" class="active" role="tab" aria-selected="true"><span class="tIco" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 6.5C10.7 5.3 8.9 4.7 6.6 4.7c-1 0-1.9.1-2.6.3v13.6c.7-.2 1.6-.3 2.6-.3 2.3 0 4.1.6 5.4 1.8 1.3-1.2 3.1-1.8 5.4-1.8 1 0 1.9.1 2.6.3V5c-.7-.2-1.6-.3-2.6-.3-2.3 0-4.1.6-5.4 1.8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 6.5V20" stroke="currentColor" stroke-width="1.7"/></svg></span>Learn</button>
-        <button data-tab="quiz" role="tab" aria-selected="false"><span class="tIco" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7"/><path d="M9.6 9.8c.2-1.4 1.2-2.3 2.6-2.3 1.5 0 2.6 1 2.6 2.3 0 2-2.5 2.2-2.5 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12.3" cy="16.7" r="1" fill="currentColor"/></svg></span>Quiz</button>
+        <button data-tab="cards" role="tab" aria-selected="false"><span class="tIco" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="7.5" y="4.5" width="12" height="13" rx="1.8" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 8.5v9a2 2 0 0 0 2 2H16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M11 8.7h5M11 12h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Flashcards</button>
         <button data-tab="progress" role="tab" aria-selected="false"><span class="tIco" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 19.5h15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M7 19.5v-6M12 19.5V5.5M17 19.5v-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>Progress</button>
       </div>
       <button id="focusBtn" class="focusBtn" title="Expand workspace" aria-label="Expand workspace" aria-pressed="false"><span aria-hidden="true">⛶</span> Expand</button>
@@ -827,37 +827,16 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
       </div>
     </div>
 
-    <div class="panelView" id="pv-quiz"><div class="pv-pad" id="quizPad"></div></div>
+    <div class="panelView" id="pv-cards"><div class="pv-pad" id="cardsPad"></div></div>
 
     <div class="panelView" id="pv-progress">
       <div id="progressSub">
         <button data-sub="mastery" class="active">Mastery</button>
-        <button data-sub="map">Concept Map</button>
-        <button data-sub="cards">Cards</button>
         <button data-sub="stats">Stats</button>
-        <button data-sub="adaptive"><span class="subFull">Adaptive Learning Path</span><span class="subShort">Adaptive Path</span></button>
       </div>
       <div class="subView active" id="sv-mastery"><div class="pv-pad" id="modelPad"></div></div>
-      <div class="subView" id="sv-cards"><div class="pv-pad" id="cardsPad"></div></div>
       <div class="subView" id="sv-stats"><div class="pv-pad" id="statsPad"></div></div>
-      <div class="subView" id="sv-adaptive"><div class="pv-pad" id="adaptivePad"></div></div>
-      <div class="subView" id="sv-map">
-        <div class="pv-pad" style="padding-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <button class="btn ghost" id="buildGraphBtn" style="padding:6px 12px;font-size:12px">Map this chapter's concepts</button>
-          <span class="hint" id="graphHint"></span>
-          <div id="mapViewSeg" role="group" aria-label="Concept map view" style="margin-left:auto"><button data-mv="graph" class="on" aria-pressed="true">Graph</button><button data-mv="outline" aria-pressed="false">Outline</button></div>
-        </div>
-        <div id="graphViewWrap"><div id="graphBox">
-          <svg id="graphSvg"></svg>
-          <div id="graphEmpty">No concept map yet.<br>Open a lesson and press “Map this chapter's concepts.”</div>
-        </div>
-        <div class="legend" style="padding:0 16px 14px">
-          <span><i style="background:var(--green)"></i>Strong (≥75%)</span>
-          <span><i style="background:var(--amber)"></i>Developing (50-74%)</span>
-          <span><i style="background:var(--rust)"></i>Needs review (&lt;50%)</span>
-          <span><i style="background:var(--ink-soft)"></i>Not assessed</span>
-        </div></div>
-        <div id="outlineView" role="region" aria-label="Concept map outline" tabindex="0"></div>
+    
       </div>
     </div>
 
@@ -1074,6 +1053,7 @@ async function callAIJSON(system,user){
   const raw=await callAI(system,user,true); if(!raw)return null;
   try{return JSON.parse(stripFence(raw))}catch(e){
     const m=stripFence(raw).match(/[\[{][\s\S]*[\]}]/); if(m){try{return JSON.parse(m[0])}catch(_){}}
+    console.warn('[DigiBook AI] structured response was not valid JSON:', String(raw).slice(0,160));
     return null;
   }
 }
@@ -1701,7 +1681,7 @@ function renderModel(){
   const pad=$('#modelPad');
   const assessed=assessedConcepts();
   const seenOnly=Object.entries(S.concepts).filter(([_,c])=>c.score==null).sort((a,b)=>b[1].seen-a[1].seen).slice(0,8);
-  let html=`<div class="card"><h4>Open Student Model</h4><p class="hint">This is <b>your</b> model - it's meant to be visible. Scores rise when you answer quizzes correctly and fall on misses. Concepts you've only encountered appear below as “seen.”</p></div>`;
+  let html=`<div class="card"><h4>Open Student Model</h4><p class="hint">This is <b>your</b> model - it's meant to be visible. Scores rise when you rate a flashcard "Got it" and fall when you press "Again". Concepts you've only encountered appear below as “seen.”</p></div>`;
   if(assessed.length){
     html+='<div class="card"><h4>Assessed concepts</h4>';
     assessed.forEach(([name,c])=>{
@@ -1710,7 +1690,7 @@ function renderModel(){
     });
     html+='</div>';
   }else{
-    html+=`<div class="card"><p class="hint">No concepts assessed yet. Take a quiz (the <b>Quiz</b> tab or “Quiz me on this”) and your mastery scores will appear here.</p></div>`;
+    html+=`<div class="card"><p class="hint">No concepts assessed yet. Review flashcards (the <b>Flashcards</b> tab) and your mastery scores will appear here.</p></div>`;
   }
   if(seenOnly.length){
     html+='<div class="card"><h4>Concepts you\'ve encountered</h4><div style="display:flex;flex-wrap:wrap;gap:6px">'+
@@ -1880,11 +1860,11 @@ function renderQuizResult(){
 
 /* ============ Flashcards ============ */
 async function generateCards(){
-  const pad=$('#cardsPad'); switchTab('progress'); progressSub('cards');
+  const pad=$('#cardsPad'); switchTab('cards');
   if(!S.book){pad.innerHTML='<div class="card"><p class="hint">Open a book to generate flashcards.</p></div>';return;}
   pad.innerHTML='<div class="card"><p class="hint">Creating flashcards from this page… <span class="spin"></span></p></div>';
   const sys=`You create concise study flashcards for students. Output ONLY valid JSON.`;
-  const usr=`From the passage below, create 5 flashcards for the key terms/concepts. Each: "front" (a term or question) and "back" (a short, clear answer, max 25 words). Return ONLY a JSON array.\n\n"""${S.pageText.slice(0,2200)}"""`;
+  const usr=`From the passage below, create 5 flashcards for the key terms/concepts. Each: "front" (a term or question), "back" (a short, clear answer, max 25 words), and "concept" (the single concept the card tests, 1-3 words). Return ONLY a JSON array.\n\n"""${S.pageText.slice(0,2200)}"""`;
   let cards=await callAIJSON(sys,usr);
   let usedAI=Array.isArray(cards)&&cards.length>0;
   if(!usedAI){ cards=fallbackCards(); }
@@ -1903,7 +1883,7 @@ function fallbackCards(){
     const s=sents.find(s=>new RegExp('\\b'+t+'\\b','i').test(s));
     if(!s)continue;
     used.add(t);
-    out.push({front:t, back:s});
+    out.push({front:t, back:s, concept:t});
   }
   return out.length?out:null;
 }
@@ -1911,7 +1891,21 @@ const SRS_INT=[0, 600000, 86400000, 259200000, 604800000, 1209600000];
 function srsKey(f){ return String(f||'').toLowerCase().trim(); }
 function srsDueLabel(r){ if(!r||r.due<=Date.now())return 'due now'; const d=r.due-Date.now(); const days=Math.round(d/86400000); if(days>=1)return 'next review in '+days+'d'; const mins=Math.max(1,Math.round(d/60000)); return 'next review in '+mins+'m'; }
 function srsDueCount(){ return S.cards.filter(c=>{ const r=S.srs[srsKey(c.front)]; return !r||r.due<=Date.now(); }).length; }
-function srsRate(front,ok){ const k=srsKey(front); const r=S.srs[k]||{box:0,due:0,seen:0}; r.box=ok?Math.min(5,(r.box||0)+1):0; r.seen=(r.seen||0)+1; r.due=Date.now()+SRS_INT[r.box]; S.srs[k]=r; save(); toast(ok?'Scheduled for later':"We'll show it again soon"); S.cardIdx=(S.cardIdx+1)%S.cards.length; renderCards(); }
+// Which concept a card assesses: an explicit tag, a term-style front, or a known
+// concept mentioned in the question.
+function cardConcept(c){
+  if(c&&c.concept)return String(c.concept);
+  const f=String(c&&c.front||'').replace(/[?.:!"]/g,'').trim();
+  if(f && f.split(/\s+/).length<=4) return f;
+  const low=' '+f.toLowerCase()+' ';
+  const pool=[...(S.graph&&Array.isArray(S.graph.nodes)?S.graph.nodes:[]),...Object.keys(S.concepts)];
+  const hit=pool.find(n=>n&&String(n).length>3&&low.includes(' '+String(n).toLowerCase()+' '));
+  return hit||null;
+}
+function srsRate(c,ok){ const k=srsKey(c.front); const r=S.srs[k]||{box:0,due:0,seen:0}; r.box=ok?Math.min(5,(r.box||0)+1):0; r.seen=(r.seen||0)+1; r.due=Date.now()+SRS_INT[r.box]; S.srs[k]=r;
+  S.stats.cardsReviewed=(S.stats.cardsReviewed||0)+1; if(ok)S.stats.cardsGot=(S.stats.cardsGot||0)+1;
+  const cn=cardConcept(c); if(cn)bumpConcept(cn, ok?+12:-10);
+  save(); toast(ok?'Mastery up - scheduled for later':"Mastery down - we'll show it again soon"); S.cardIdx=(S.cardIdx+1)%S.cards.length; renderCards(); }
 function reviewDueFirst(){ S.cards=S.cards.slice().sort((a,b)=>{ const ra=S.srs[srsKey(a.front)],rb=S.srs[srsKey(b.front)]; return (ra?ra.due:0)-(rb?rb.due:0); }); S.cardIdx=0; renderCards(); }
 function renderCards(){
   const pad=$('#cardsPad');
@@ -1939,8 +1933,8 @@ function renderCards(){
   $('#fcPrev').onclick=()=>{S.cardIdx=(S.cardIdx-1+S.cards.length)%S.cards.length;renderCards();};
   $('#fcNext').onclick=()=>{S.cardIdx=(S.cardIdx+1)%S.cards.length;renderCards();};
   $('#regenCards').onclick=generateCards;
-  $('#srsAgain').onclick=()=>srsRate(c.front,false);
-  $('#srsGot').onclick=()=>srsRate(c.front,true);
+  $('#srsAgain').onclick=()=>srsRate(c,false);
+  $('#srsGot').onclick=()=>srsRate(c,true);
   const rd=$('#revDue'); if(rd)rd.onclick=reviewDueFirst;
 }
 
@@ -1992,6 +1986,7 @@ function nodeColor(name){ const s=conceptScore(name);
 let graphSim=null;
 function renderGraph(){
   const svg=$('#graphSvg'), empty=$('#graphEmpty');
+  if(!svg||!empty)return;
   if(!S.graph||!Array.isArray(S.graph.nodes)||!S.graph.nodes.length){empty.style.display='flex';svg.innerHTML='';return;}
   if(!Array.isArray(S.graph.edges))S.graph.edges=[];
   empty.style.display='none';
@@ -2049,7 +2044,7 @@ function renderGraph(){
 function fmtTime(s){const m=Math.floor(s/60),sec=s%60;return m?`${m}m ${sec}s`:`${sec}s`;}
 function updateStats(){
   const pad=$('#statsPad'); const st=S.stats;
-  const acc=st.quizTotal?Math.round(st.quizCorrect/st.quizTotal*100):null;
+  const acc=(st.cardsReviewed||0)?Math.round((st.cardsGot||0)/st.cardsReviewed*100):null;
   const assessed=assessedConcepts();
   const strong=assessed.filter(([_,c])=>c.score>=75).length;
   const weak=assessed.filter(([_,c])=>c.score<50).length;
@@ -2064,8 +2059,8 @@ function updateStats(){
     </div>
     <div class="card"><h4>Learning</h4>
       <div class="statGrid">
-        <div class="stat"><div class="n">${st.quizzesTaken}</div><div class="l">quizzes taken</div></div>
-        <div class="stat"><div class="n">${acc==null?'-':acc+'%'}</div><div class="l">quiz accuracy</div></div>
+        <div class="stat"><div class="n">${st.cardsReviewed||0}</div><div class="l">cards reviewed</div></div>
+        <div class="stat"><div class="n">${acc==null?'-':acc+'%'}</div><div class="l">recall accuracy</div></div>
         <div class="stat"><div class="n">${strong}</div><div class="l">strong concepts</div></div>
         <div class="stat"><div class="n">${weak}</div><div class="l">need review</div></div>
       </div>
@@ -2096,19 +2091,16 @@ function switchTab(name){
   $$('.panelView').forEach(v=>v.classList.toggle('active',v.id==='pv-'+name));
   { const _nb=document.querySelector('#nbBtn'); if(_nb){_nb.classList.remove('on');_nb.setAttribute('aria-pressed','false');} if(typeof nbUI!=='undefined')nbUI.open=false; }
   if(name==='progress')progressSub(S.progressSub||'mastery');
-  if(name==='quiz' && !S.quiz)renderQuizIdle();
+  if(name==='cards')renderCards();
   announce(name.charAt(0).toUpperCase()+name.slice(1)+' tab.');
 }
 function progressSub(name){
+  if(name!=='mastery'&&name!=='stats')name='mastery';   // legacy saved values
   S.progressSub=name;
   $$('#progressSub button').forEach(b=>b.classList.toggle('active',b.dataset.sub===name));
   $$('#pv-progress .subView').forEach(v=>v.classList.toggle('active',v.id==='sv-'+name));
   if(name==='mastery')renderModel();
-  else if(name==='cards')renderCards();
   else if(name==='stats')updateStats();
-  else if(name==='map')renderGraph();
-  else if(name==='adaptive')renderAdaptive();
-  if(window.innerWidth<=860 && S.book && (name==='map'||name==='adaptive')) toggleFocus(true);
 }
 
 /* ============ Highlight & bookmark ============ */
@@ -2171,14 +2163,14 @@ function loadDemo(id){
 /* ============ About (panel tab) ============ */
 function aboutBodyHTML(){
  return `
- <p class="aboutIntro">DigiBook turns a static reading into an active lesson. Open a document, tap what you don't understand, and it explains, tutors, quizzes you, and keeps a visible map of what you've mastered.</p>
+ <p class="aboutIntro">DigiBook turns a static reading into an active lesson. Open a document, tap what you don't understand, and it explains, tutors you, checks what you remember, and keeps a visible map of what you've mastered.</p>
  <h3 class="aboutH">How it works</h3>
  <ul class="aboutList">
   <li><b>Open a document.</b> Drag in a PDF, DOCX, or TXT, or pick a lesson from the Demo Library. Everything is processed in your browser; only the passages you ask about are sent to the AI tutor.</li>
   <li><b>Select to learn.</b> Highlight a word or paragraph and choose Define, Explain simply, Translate, Summarize, Ask tutor, or Add to Notes — in any of nine languages.</li>
   <li><b>Get tutored, not told.</b> In Guide me mode the tutor asks guiding questions so you reason to the answer yourself; Just answer is direct.</li>
-  <li><b>Practice.</b> Generate quizzes and flashcards from the page or your notes. Results raise or lower your concept mastery.</li>
-  <li><b>See what's next.</b> Progress shows mastery for every concept, a knowledge graph, and an Adaptive Learning Path that recommends what to review — and tells you why.</li>
+  <li><b>Practice.</b> Generate flashcards from the page or your notes. Rating yourself raises or lowers your concept mastery.</li>
+  <li><b>See your progress.</b> The Progress tab shows a live mastery score for every concept, built from your flashcard reviews, plus your reading stats.</li>
  </ul>
  <h3 class="aboutH">Study tools</h3>
  <p class="hint">The <b>Notebook</b> keeps typed, dictated, or sketched notes for each page and can turn them into flashcards or a quiz. A <b>Study Room</b> lets you read the same page, share notes and sketches, chat, and talk live with a study buddy — your private notes and progress are never shared.</p>
@@ -2725,7 +2717,7 @@ function renderAcxPanel(){
     <div id="acxGuide" class="acxGuide" hidden>
       <p class="hint"><b>Keyboard:</b> Tab and Shift+Tab move between controls, Enter or Space activates, arrows move within a group, Esc closes menus. Skip links at the very top jump to the document or the tools.</p>
       <p class="hint"><b>Read aloud:</b> turn it on, then use the reader's play bar, or select text first to hear only that. Each tutor answer gets a speaker button.</p>
-      <p class="hint"><b>Voice:</b> the tutor has an "Ask by voice" mic. With Voice commands on, say phrases like "Open quiz", "Read page", "Next page", or "Answer A".</p>
+      <p class="hint"><b>Voice:</b> the tutor has an "Ask by voice" mic. With Voice commands on, say phrases like "Open flashcards", "Read page", or "Next page".</p>
       <p class="hint"><b>Screen readers:</b> DigiBook announces page changes, quiz feedback and path updates, and the Concept Map offers an Outline view.</p>
     </div>
     <div id="acxKeys" class="acxGuide" hidden>
@@ -2736,7 +2728,7 @@ function renderAcxPanel(){
         <dt>Esc</dt><dd>Close a menu or dialog</dd>
         <dt>Tab at the top of the page</dt><dd>Reveal skip links to the document or the tools</dd>
       </dl>
-      <p class="hint">With Voice commands on, you can also say phrases like "Open quiz", "Read page", "Next page", or "Answer A".</p>
+      <p class="hint">With Voice commands on, you can also say phrases like "Open flashcards", "Read page", or "Next page".</p>
     </div>`;
   pad.querySelectorAll('.acxToggle').forEach(b=>{ if(b.disabled)return; b.onclick=()=>{ const k=b.dataset.key; S.acx[k]=!S.acx[k]; acxSave(); applyAcx(); renderAcxPanel(); const names={readAloud:'Read aloud',autoReadTutor:'Auto read tutor responses',highContrast:'High contrast',easyInteraction:'Easy interaction mode',voiceCommands:'Voice commands',reduceMotion:'Reduce motion'}; toast((names[k]||'Setting')+' '+(S.acx[k]?'on':'off')); announce((names[k]||'Setting')+' '+(S.acx[k]?'enabled':'disabled')); }; });
   pad.querySelectorAll('.acxTextSeg button').forEach(b=>{ b.onclick=()=>{ S.acx.textSize=b.dataset.ts; acxSave(); applyAcx(); renderAcxPanel(); announce('Text size '+b.dataset.ts.replace('xlarge','extra large')); }; });
@@ -2849,23 +2841,16 @@ function vcSelectAnswer(oi){ const cards=[...document.querySelectorAll('.qCard')
 function vcHandle(t){
   const has=(...w)=>w.some(x=>t.includes(x));
   if(has('open learn','go to learn'))return switchTab('learn');
-  if(has('adaptive path','adaptive lesson','open adaptive'))return (switchTab('progress'),progressSub('adaptive'));
-  if(has('concept map','open map','show map'))return (switchTab('progress'),progressSub('map'));
-  if(has('open cards','flash cards','flashcards'))return (switchTab('progress'),progressSub('cards'));
+  if(has('open cards','flash cards','flashcards'))return switchTab('cards');
   if(has('open stats','statistics'))return (switchTab('progress'),progressSub('stats'));
   if(has('open mastery','show mastery'))return (switchTab('progress'),progressSub('mastery'));
   if(has('open progress'))return switchTab('progress');
-  if(has('open quiz','go to quiz'))return switchTab('quiz');
   if(has('read page','read aloud','read this'))return raPlayPage();
   if(has('stop reading','stop read','stop aloud'))return raStop();
   if(has('next page'))return gotoPage(S.page+1);
   if(has('previous page','prev page','go back a page'))return gotoPage(S.page-1);
-  if(has('quiz me','start quiz','create quiz'))return generateQuiz();
-  if(has('start adaptive lesson','start lesson')){ const r=aRecommend(); if(r)startAdaptiveLesson(r.name); return; }
   if(has('back to reader','split view'))return toggleFocus(false);
   if(has('focus mode','expand'))return toggleFocus(true);
-  const m=t.match(/answer ([a-d])\b/); if(m && S.quiz && !S.quiz.done){ return vcSelectAnswer('abcd'.indexOf(m[1])); }
-  if(has('next question','submit quiz','submit answers')){ const sb=$('#submitQuiz'); if(sb)sb.click(); return; }
 }
 
 /* ---------- Concept Map: accessible outline ---------- */
@@ -2973,7 +2958,6 @@ function nbRenderNotes(){
     +       '<button role="menuitem" data-k="missing">What am I missing?</button>'
     +     '</div></span>'
     +   '<button class="btn" id="nbCardsBtn">Make Flashcards</button>'
-    +   '<button class="btn" id="nbQuizBtn">Quiz Me</button>'
     + '</div>';
   const ed=$('#nbEditor');
   if(ed){
@@ -2986,7 +2970,6 @@ function nbRenderNotes(){
   const ask=$('#nbAskBtn'); if(ask)ask.onclick=(e)=>{ e.stopPropagation(); const m=$('#nbAskMenu'); const o=m.classList.toggle('open'); ask.setAttribute('aria-expanded',o?'true':'false'); };
   $$('#nbAskMenu [data-k]').forEach(b=>b.onclick=()=>{ $('#nbAskMenu').classList.remove('open'); nbAsk(b.dataset.k); });
   const cb=$('#nbCardsBtn'); if(cb)cb.onclick=nbMakeCards;
-  const qb=$('#nbQuizBtn'); if(qb)qb.onclick=nbQuizMe;
 }
 function nbPersistNotes(){ const ed=$('#nbEditor'); const doc=nbDoc(); if(!ed||!doc)return; doc.notes[nbUI.editorPage]=ed.innerHTML; nbSaveData(); }
 function nbFlashSaved(){ const s=$('#nbSaved'); if(!s)return; s.classList.add('show'); clearTimeout(s._t); s._t=setTimeout(()=>s.classList.remove('show'),1300); }
@@ -3623,7 +3606,7 @@ function nbRenderSharedNotes(){
     +'<div class="nbActions">'
       +'<span class="nbAsk"><button class="btn ghost" id="nbAskBtn" aria-haspopup="true" aria-expanded="false">Ask DigiBook &#9662;</button>'
       +'<div class="nbAskMenu" id="nbAskMenu" role="menu"><button role="menuitem" data-k="explain">Explain this</button><button role="menuitem" data-k="check">Check our solution</button><button role="menuitem" data-k="summarize">Summarize</button><button role="menuitem" data-k="missing">What are we missing?</button></div></span>'
-      +'<button class="btn" id="nbCardsBtn">Make Flashcards</button><button class="btn" id="nbQuizBtn">Quiz Us</button>'
+      +'<button class="btn" id="nbCardsBtn">Make Flashcards</button>'
     +'</div>';
   nbWireGoSrc(c);
   const add=$('#srNoteAdd'); if(add)add.onclick=()=>{ const i=$('#srNoteInput'); if(i){ srAddNote(i.value); i.value=''; i.focus(); } };
@@ -3634,7 +3617,6 @@ function nbRenderSharedNotes(){
   const ask=$('#nbAskBtn'); if(ask)ask.onclick=(e)=>{ e.stopPropagation(); const m=$('#nbAskMenu'); const o=m.classList.toggle('open'); ask.setAttribute('aria-expanded',o?'true':'false'); };
   $$('#nbAskMenu [data-k]').forEach(b=>b.onclick=()=>{ $('#nbAskMenu').classList.remove('open'); nbAsk(b.dataset.k); });
   const cb=$('#nbCardsBtn'); if(cb)cb.onclick=nbMakeCards;
-  const qb=$('#nbQuizBtn'); if(qb)qb.onclick=nbQuizMe;
 }
 function srNoteBeginEdit(id){
   const n=srNotes[id]; if(!n) return;
@@ -3857,7 +3839,6 @@ $('#nextBtn').onclick=()=>gotoPage(S.page+1);
 $('#bmBtn').onclick=toggleBookmark;
 $('#hlModeBtn').onclick=toggleHLMode;
 $('#levelSel').onchange=e=>{ S.level=e.target.value; localStorage.setItem(LS+'_level',S.level); };
-$('#buildGraphBtn').onclick=buildGraph;
 
 /* About now lives in its own panel tab. */
 $('#aboutLink').onclick=openHowItWorks;
@@ -3881,7 +3862,7 @@ let readFS=19;
   const th=localStorage.getItem(LS+'_theme'); if(th)document.body.dataset.theme=th;
   if(localStorage.getItem(LS+'_read')==='easy'){ document.body.dataset.read='easy'; const rb=$('#readFontBtn'); if(rb){rb.setAttribute('aria-pressed','true');rb.style.background='var(--hl)';rb.style.color='#22303F';} }
   const _lv=localStorage.getItem(LS+'_level'); if(_lv){ S.level=_lv; const ls=$('#levelSel'); if(ls)ls.value=_lv; }
-  load(); renderChat(); renderModel(); renderShelf(); renderDemoLibrary(); updateStats(); renderCards(); renderGraph(); renderQuizIdle();
+  load(); renderChat(); renderModel(); renderShelf(); renderDemoLibrary(); updateStats(); renderCards();
   // ping AI proxy quietly to set pill
   fetch('/.netlify/functions/ai-proxy').then(r=>r.json()).then(d=>setAI(!!(d&&d.ok&&d.keyConfigured))).catch(()=>setAI(false));
   document.documentElement.style.setProperty('--readfs',readFS+'px');
