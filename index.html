@@ -519,8 +519,7 @@ body.acx-motion #micBtn.listening{animation:none}
 /* ---------- Reading spacing + ruler ---------- */
 body.acx-space-comfortable #textPage{letter-spacing:.03em;word-spacing:.05em;line-height:1.9}
 body.acx-space-spacious #textPage{letter-spacing:.06em;word-spacing:.12em;line-height:2.2}
-body.acx-ruler #textPage p,body.acx-ruler #textPage h2{transition:opacity .12s;opacity:.32}
-body.acx-ruler #textPage p.ruler-focus,body.acx-ruler #textPage h2.ruler-focus,body.acx-ruler #textPage .ra-current{opacity:1}
+body.acx-ruler #textPage p.ruler-focus,body.acx-ruler #textPage h2.ruler-focus,body.acx-ruler #textPage .ra-current{font-weight:700}
 body.acx-motion #textPage p,body.acx-motion #textPage h2{transition:none}
 
 /* ---------- Sepia reading theme ---------- */
@@ -984,7 +983,7 @@ function updateRaBarVis(){
 function setPanel(open){
   document.body.classList.toggle('panel-open',open);
   const b=document.querySelector('#panelBtn');
-  if(b){ b.classList.toggle('on',open); b.setAttribute('aria-pressed',open?'true':'false'); }
+  if(b){ const on=open&&!document.body.classList.contains('nb-left'); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false'); }
   if(!open){
     document.body.classList.remove('nb-left');
     const nbv=document.querySelector('#pv-notebook');
@@ -2091,8 +2090,8 @@ function updateStats(){
 
 /* ============ Tabs ============ */
 function switchTab(name){
-  setPanel(true);
   document.body.classList.remove('nb-left');
+  setPanel(true);
   $$('#panelTabs button').forEach(b=>{const on=b.dataset.tab===name;b.classList.toggle('active',on);b.setAttribute('role','tab');b.setAttribute('aria-selected',on?'true':'false');});
   $$('.panelView').forEach(v=>v.classList.toggle('active',v.id==='pv-'+name));
   { const _nb=document.querySelector('#nbBtn'); if(_nb){_nb.classList.remove('on');_nb.setAttribute('aria-pressed','false');} if(typeof nbUI!=='undefined')nbUI.open=false; }
@@ -2159,13 +2158,8 @@ function setDemo(on,label){
 }
 function loadDemo(id){
   const t=DEMO_INDEX[id]; if(!t)return;
-  // Seed curated mastery so Progress + Concept Map are populated instantly.
-  if(t.mastery){ Object.entries(t.mastery).forEach(([name,score])=>{ const k=cap(String(name).toLowerCase());
-    const seen=(S.concepts[k]&&S.concepts[k].seen)||0; S.concepts[k]={score:Math.round(score),seen:seen+1}; }); }
-  // Seed lightweight adaptive signals so the Adaptive Learning Path has real inputs to reason from.
-  if(t.mastery){ Object.entries(t.mastery).forEach(([name,score])=>{ const s=aSig(name); s.previousMastery=Math.round(score);
-    if(score<52){ s.quizAttempts=3;s.correct=1;s.incorrect=2;s.tutorQuestions=1;s.explanationRequests=1;s.lastInteraction=Date.now(); }
-    else if(score<70){ s.quizAttempts=3;s.correct=2;s.incorrect=1;s.lastInteraction=Date.now(); } }); }
+  // Mastery is earned, never pre-populated: demos ship a concept map (structure)
+  // but every score starts unassessed until the student takes a quiz.
   loadText(t.pages, t.title, 'text');           // clears demo flag, enters reader
   S.book.demo=true; S.book.demoId=id;
   if(t.graph){ S.graph={nodes:t.graph.nodes.slice(), edges:t.graph.edges.map(e=>e.slice()), offline:false}; }
@@ -2696,7 +2690,7 @@ function renderAcxPanel(){
         <button data-sp="spacious" class="${sp==='spacious'?'on':''}" aria-pressed="${sp==='spacious'}">Spacious</button>
       </span></div>
     ${acxSwitch('easyFont','Easy-reading font',false,'Dyslexia-friendly font for the document')}
-    ${acxSwitch('readingRuler','Reading ruler',false,'Dim all but the line you point at')}
+    ${acxSwitch('readingRuler','Reading ruler',false,'Bold the line you point at')}
     ${acxSwitch('highContrast','High contrast')}
     <div class="acxRow"><span class="acxRowText"><span class="acxLabel">Reading theme</span><span class="acxNote">Sepia is warmer and lower blue light</span></span>
       <span class="acxSeg acxTheme" role="group" aria-label="Reading theme">
@@ -2917,7 +2911,7 @@ function nbUid(p){ return (p||'s')+Date.now().toString(36)+Math.random().toStrin
 function nbToggle(){ if(nbUI.open && $('#pv-notebook') && $('#pv-notebook').classList.contains('active')){ switchTab('learn'); setPanel(false); } else openNotebook(); }
 function openNotebook(mode,scope){
   nbUI.open=true; if(mode)nbUI.mode=mode; if(scope)nbUI.scope=scope;
-  setPanel(true); document.body.classList.add('nb-left');
+  document.body.classList.add('nb-left'); setPanel(true);
   $$('#panelTabs button').forEach(b=>{ b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
   $$('.panelView').forEach(v=>v.classList.toggle('active',v.id==='pv-notebook'));
   const nb=$('#nbBtn'); if(nb){ nb.classList.add('on'); nb.setAttribute('aria-pressed','true'); }
@@ -3844,7 +3838,9 @@ const dz=$('#dropzone');
 dz.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f)openFile(f); });
 
 $('#homeBrand').onclick=goLibrary;
-$('#panelBtn').onclick=()=>{ const open=!document.body.classList.contains('panel-open'); setPanel(open); announce(open?'Learning tools opened.':'Learning tools closed.'); };
+$('#panelBtn').onclick=()=>{
+  if(document.body.classList.contains('nb-left')){ switchTab('learn'); announce('Learning tools opened.'); return; }
+  const open=!document.body.classList.contains('panel-open'); setPanel(open); announce(open?'Learning tools opened.':'Learning tools closed.'); };
 $('#ttsBtn').onclick=()=>{ raVisible=!raVisible; updateRaBarVis(); announce(raVisible?'Read aloud controls shown.':'Read aloud controls hidden.'); };
 $('#focusBtn').onclick=()=>toggleFocus();
 $('#exitReadBtn').onclick=goLibrary;
