@@ -2,14 +2,14 @@
 
 **An adaptive AI textbook that turns any document into an active lesson.**
 
-Drop in a PDF, DOCX, or TXT — or open one of 17 built-in lessons — and the
+Drop in a PDF, DOCX, or TXT (or open one of 17 built-in lessons) and the
 reading becomes something you can talk to. Ask about any word or passage in
 place, get tutored instead of told, turn what you just read into flashcards,
 and watch a visible mastery score for every concept that you earn one review
 at a time.
 
 Built by **Ansh Saini**, South Brunswick High School, New Jersey.
-Submitted to **ReverieHacks 2026** — Software Development track.
+Submitted to **ReverieHacks 2026**, Software Development track.
 
 📖 **[Full documentation →](DOCUMENTATION.md)**
 
@@ -29,28 +29,28 @@ DigiBook puts them in one place.
 
 | | |
 |---|---|
-| 📄 **Reads your documents** | PDF, DOCX, TXT — parsed entirely in your browser, never uploaded |
-| ✋ **Select to learn** | Highlight anything → Define, Explain simply, Translate, Summarize, Ask tutor, Add to Notes — in 9 languages |
+| 📄 **Reads your documents** | PDF, DOCX, TXT, parsed entirely in your browser, never uploaded |
+| ✋ **Select to learn** | Highlight anything → Define, Explain simply, Translate, Summarize, Ask tutor, Add to Notes, in 9 languages |
 | 🧠 **Socratic tutor** | *Guide me* mode asks you questions so you reason to the answer. *Just answer* when you need it direct |
-| 🗂 **Flashcards that count** | Generated from the page or your notes, each tied to a concept — "Got it" raises that concept's mastery, "Again" lowers it, with Leitner spaced repetition deciding when cards return |
-| 📊 **Open student model** | A visible mastery bar for every concept. Nothing is pre-filled — every score is earned through your own reviews |
-| 📓 **Notebook** | Its own left-side panel that stays open alongside the tutor — typed or dictated notes, sketches, one-click flashcards from your notes |
+| 🗂 **Flashcards that count** | Generated from the page or your notes, each tied to a concept: "Got it" raises that concept's mastery, "Again" lowers it, with Leitner spaced repetition deciding when cards return |
+| 📊 **Open student model** | A visible mastery bar for every concept. Nothing is pre-filled; every score is earned through your own reviews |
+| 📓 **Notebook** | Its own left-side panel that stays open alongside the tutor: typed or dictated notes, sketches, one-click flashcards from your notes |
 | 👥 **Study Rooms** | Share a code; two or more students on the same page with shared notes, sketching, chat, and live voice |
 | ♿ **Accessibility throughout** | Read-aloud in 9 languages, voice commands, dyslexia font, reading ruler, high contrast, full keyboard and screen-reader support |
 
-Accessibility is built into the same app everyone else uses — there is no
+Accessibility is built into the same app everyone else uses; there is no
 stripped-down "accessible version."
 
 ## How it's built
 
-A **single `index.html`** — vanilla JavaScript, no framework, no build step. The
+A **single `index.html`**: vanilla JavaScript, no framework, no build step. The
 interface is three independent regions: notebook (left), reader (center), and
 learning sidebar (right, with Learn / Flashcards / Progress), any combination
 open at once, with Study Rooms as a centered overlay.
 
 AI runs through a Netlify serverless function that hides the API key, falls
 through a chain of Gemini models until one answers, and **validates structured
-responses server-side** — a model that returns prose or truncated JSON when
+responses server-side**: a model that returns prose or truncated JSON when
 flashcards were requested gets skipped, not trusted. The chain is overridable
 via a `GEMINI_MODELS` environment variable, no code changes needed. Documents
 are parsed client-side with pdf.js and mammoth. Progress lives in
@@ -62,14 +62,14 @@ Chromebook.
 
 ```
 index.html                       # the entire application
-netlify/functions/ai-proxy.js    # Gemini proxy — the API key never reaches the browser
+netlify/functions/ai-proxy.js    # Gemini proxy: the API key never reaches the browser
 netlify.toml                     # publish + functions config
 DOCUMENTATION.md                 # full docs: manual, setup, architecture, accessibility
 ```
 
 ## Quick start
 
-**Try it without a key.** Any static server works — reading, themes,
+**Try it without a key.** Any static server works; reading, themes,
 accessibility, notes, sketching, offline flashcards, and all 17 demo lessons run
 without AI:
 
@@ -95,7 +95,7 @@ variables**, then:
 netlify deploy --prod
 ```
 
-Verify with a GET to `/.netlify/functions/ai-proxy` — it self-reports whether
+Verify with a GET to `/.netlify/functions/ai-proxy`; it self-reports whether
 the key is configured and which model chain is live.
 
 Full setup, configuration, and troubleshooting: **[DOCUMENTATION.md](DOCUMENTATION.md)**
@@ -111,8 +111,8 @@ repetition schedules the card's return.
 unassessed. If a bar shows 62%, it's because the student put it there.
 
 **Honest fallbacks.** If the AI is unreachable, flashcards fall back to a
-built-in extractive analyzer over the actual page text — always labeled as
-offline content — and the tutor says it's offline and preserves your question
+built-in extractive analyzer over the actual page text, always labeled as
+offline content, and the tutor says it's offline and preserves your question
 rather than inventing an answer.
 
 **Defense against quiet AI failures.** Gemini's "thinking" models can burn

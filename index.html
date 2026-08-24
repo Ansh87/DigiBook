@@ -51,8 +51,10 @@ select.ctl{font-family:inherit;font-size:12px;padding:6px 8px;border:1px solid v
 #readerCol{flex:1;display:flex;flex-direction:column;min-width:0}
 #panel{width:400px;min-width:340px;border-left:1px solid var(--line);background:var(--page);display:none;flex-direction:column}
 body.panel-open #panel{display:flex}
-body.nb-left #panel{order:-1;border-left:none;border-right:1px solid var(--line)}
-body.nb-left #panelTop{display:none}
+#nbPanel{width:400px;min-width:340px;border-right:1px solid var(--line);background:var(--page);display:none;flex-direction:column}
+body.nb-open #nbPanel{display:flex}
+body.focus-mode #nbPanel{display:none}
+@media(max-width:860px){ #nbPanel{width:100%;min-width:0;height:46%;border-right:none;border-bottom:1px solid var(--line)} }
 #panelTabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto}
 #panelTabs button{flex:1;padding:11px 6px;font-size:12px;font-weight:600;color:var(--ink-soft);border-bottom:2px solid transparent;white-space:nowrap}
 #panelTabs button.active{color:var(--blue);border-bottom-color:var(--hl)}
@@ -532,8 +534,6 @@ body.acx-motion #textPage p,body.acx-motion #textPage h2{transition:none}
 
 /* ---------- Study Notebook ---------- */
 #nbBtn.on{background:var(--hl);color:#22303F}
-#pv-notebook{flex-direction:column;height:100%;padding:0}
-#pv-notebook.active{display:flex}
 #nbHead{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 #nbHead h3{font-size:14px;font-weight:800;color:var(--ink);margin:0;display:flex;align-items:center;gap:5px}
 .nbModes,.nbScope{display:inline-flex;border:1px solid var(--line);border-radius:99px;overflow:hidden}
@@ -720,6 +720,28 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
 </div>
 
 <div id="app">
+  <div id="nbPanel" role="complementary" aria-label="Study Notebook">
+      <div id="nbHead">
+        <h3><span aria-hidden="true"><svg class="ico sm" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 3.5v17M12.5 8h3.5M12.5 12h3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span> Notebook</h3>
+        <span class="nbModes" role="group" aria-label="Notebook mode">
+          <button id="nbModeNotes" class="on" aria-pressed="true">Notes</button>
+          <button id="nbModeSketch" aria-pressed="false">Sketch</button>
+        </span>
+        <span class="nbScope" id="nbScopeSeg" role="group" aria-label="Notebook scope">
+          <button id="nbScopePage" class="on" aria-pressed="true">Current Page</button>
+          <button id="nbScopeAll" aria-pressed="false">All Notes</button>
+        </span>
+        <span id="nbSaved" role="status" aria-live="polite">Saved</span>
+        <span class="nbMore">
+          <button class="iconbtn" id="nbMoreBtn" title="More" aria-label="More options" aria-haspopup="true" aria-expanded="false">⋯</button>
+          <div class="nbMoreMenu" id="nbMoreMenu" role="menu">
+            <button id="nbExportNotes" role="menuitem">Export Notes</button>
+            <button id="nbExportSketch" role="menuitem">Export Sketch</button>
+          </div>
+        </span>
+      </div>
+      <div id="nbContent"></div>
+  </div>
   <div id="readerCol" role="main">
     <!-- Library -->
     <div id="library">
@@ -838,28 +860,6 @@ body.acx-contrast .srChip,body.acx-contrast #srBar,body.acx-contrast #srChat{bor
       <div class="subView" id="sv-stats"><div class="pv-pad" id="statsPad"></div></div>
     </div>
 
-    <div class="panelView" id="pv-notebook" role="region" aria-label="Study Notebook">
-      <div id="nbHead">
-        <h3><span aria-hidden="true"><svg class="ico sm" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 3.5v17M12.5 8h3.5M12.5 12h3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span> Notebook</h3>
-        <span class="nbModes" role="group" aria-label="Notebook mode">
-          <button id="nbModeNotes" class="on" aria-pressed="true">Notes</button>
-          <button id="nbModeSketch" aria-pressed="false">Sketch</button>
-        </span>
-        <span class="nbScope" id="nbScopeSeg" role="group" aria-label="Notebook scope">
-          <button id="nbScopePage" class="on" aria-pressed="true">Current Page</button>
-          <button id="nbScopeAll" aria-pressed="false">All Notes</button>
-        </span>
-        <span id="nbSaved" role="status" aria-live="polite">Saved</span>
-        <span class="nbMore">
-          <button class="iconbtn" id="nbMoreBtn" title="More" aria-label="More options" aria-haspopup="true" aria-expanded="false">⋯</button>
-          <div class="nbMoreMenu" id="nbMoreMenu" role="menu">
-            <button id="nbExportNotes" role="menuitem">Export Notes</button>
-            <button id="nbExportSketch" role="menuitem">Export Sketch</button>
-          </div>
-        </span>
-      </div>
-      <div id="nbContent"></div>
-    </div>
   </div>
 </div>
 
@@ -960,16 +960,8 @@ function updateRaBarVis(){
 function setPanel(open){
   document.body.classList.toggle('panel-open',open);
   const b=document.querySelector('#panelBtn');
-  if(b){ const on=open&&!document.body.classList.contains('nb-left'); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false'); }
-  if(!open){
-    document.body.classList.remove('nb-left');
-    const nbv=document.querySelector('#pv-notebook');
-    if(nbv&&nbv.classList.contains('active')){
-      document.querySelectorAll('.panelView').forEach(v=>v.classList.toggle('active',v.id==='pv-learn'));
-      document.querySelectorAll('#panelTabs button').forEach(t=>{const on=t.dataset.tab==='learn';t.classList.toggle('active',on);t.setAttribute('aria-selected',on?'true':'false');});
-    }
-    if(document.body.classList.contains('focus-mode'))toggleFocus(false);
-  }
+  if(b){ b.classList.toggle('on',open); b.setAttribute('aria-pressed',open?'true':'false'); }
+  if(!open && document.body.classList.contains('focus-mode'))toggleFocus(false);
 }
 function save(){
   const d={concepts:S.concepts,stats:S.stats,graph:S.graph,cards:S.cards,
@@ -2083,11 +2075,9 @@ function updateStats(){
 
 /* ============ Tabs ============ */
 function switchTab(name){
-  document.body.classList.remove('nb-left');
   setPanel(true);
   $$('#panelTabs button').forEach(b=>{const on=b.dataset.tab===name;b.classList.toggle('active',on);b.setAttribute('role','tab');b.setAttribute('aria-selected',on?'true':'false');});
   $$('.panelView').forEach(v=>v.classList.toggle('active',v.id==='pv-'+name));
-  { const _nb=document.querySelector('#nbBtn'); if(_nb){_nb.classList.remove('on');_nb.setAttribute('aria-pressed','false');} if(typeof nbUI!=='undefined')nbUI.open=false; }
   if(name==='progress')progressSub(S.progressSub||'mastery');
   if(name==='cards')renderCards();
   announce(name.charAt(0).toUpperCase()+name.slice(1)+' tab.');
@@ -2165,16 +2155,16 @@ function aboutBodyHTML(){
  <h3 class="aboutH">How it works</h3>
  <ul class="aboutList">
   <li><b>Open a document.</b> Drag in a PDF, DOCX, or TXT, or pick a lesson from the Demo Library. Everything is processed in your browser; only the passages you ask about are sent to the AI tutor.</li>
-  <li><b>Select to learn.</b> Highlight a word or paragraph and choose Define, Explain simply, Translate, Summarize, Ask tutor, or Add to Notes — in any of nine languages.</li>
+  <li><b>Select to learn.</b> Highlight a word or paragraph and choose Define, Explain simply, Translate, Summarize, Ask tutor, or Add to Notes, in any of nine languages.</li>
   <li><b>Get tutored, not told.</b> In Guide me mode the tutor asks guiding questions so you reason to the answer yourself; Just answer is direct.</li>
   <li><b>Practice.</b> Generate flashcards from the page or your notes. Rating yourself raises or lowers your concept mastery.</li>
   <li><b>See your progress.</b> The Progress tab shows a live mastery score for every concept, built from your flashcard reviews, plus your reading stats.</li>
  </ul>
  <h3 class="aboutH">Study tools</h3>
- <p class="hint">The <b>Notebook</b> keeps typed, dictated, or sketched notes for each page and can turn them into flashcards or a quiz. A <b>Study Room</b> lets you read the same page, share notes and sketches, chat, and talk live with a study buddy — your private notes and progress are never shared.</p>
+ <p class="hint">The <b>Notebook</b> keeps typed, dictated, or sketched notes for each page and can turn them into flashcards. A <b>Study Room</b> lets you read the same page, share notes and sketches, chat, and talk live with a study buddy; your private notes and progress are never shared.</p>
  <h3 class="aboutH">Accessibility</h3>
  <p class="hint">Open the accessibility panel from the top bar: read aloud in nine languages, voice commands and dictation, high contrast, large text, spacing, a dyslexia-friendly font, a reading ruler, reading themes, reduced motion, and full keyboard support. Choices are remembered on your device.</p>
- <p class="hint">No accounts — progress lives only in this browser. DigiBook is an educational proof of concept by Ansh Saini, a student at South Brunswick High School, New Jersey. It extends earlier ARGOS research on Socratic tutoring and open student modeling. AI-generated content supports learning and should not replace textbooks or teachers.</p>`;
+ <p class="hint">No accounts: progress lives only in this browser. DigiBook is an educational proof of concept by Ansh Saini, a student at South Brunswick High School, New Jersey. It extends earlier ARGOS research on Socratic tutoring and open student modeling. AI-generated content supports learning and should not replace textbooks or teachers.</p>`;
 }
 function openHowItWorks(){ const p=$('#aboutModalPad'); if(p)p.innerHTML=aboutBodyHTML(); const o=$('#aboutOverlay'); o.classList.add('open'); o.setAttribute('aria-hidden','false'); }
 function closeHowItWorks(){ const o=$('#aboutOverlay'); o.classList.remove('open'); o.setAttribute('aria-hidden','true'); }
@@ -2891,17 +2881,18 @@ function nbDoc(){ const k=nbDocKey(); if(!k)return null; if(!nbData.docs[k])nbDa
 function nbSourceLabel(){ return 'From '+(S.book?S.book.title:'this book')+', Page '+((S.page||0)+1); }
 function nbUid(p){ return (p||'s')+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
 
-function nbToggle(){ if(nbUI.open && $('#pv-notebook') && $('#pv-notebook').classList.contains('active')){ switchTab('learn'); setPanel(false); } else openNotebook(); }
+function nbToggle(){ if(nbUI.open) closeNotebook(); else openNotebook(); }
 function openNotebook(mode,scope){
   nbUI.open=true; if(mode)nbUI.mode=mode; if(scope)nbUI.scope=scope;
-  document.body.classList.add('nb-left'); setPanel(true);
-  $$('#panelTabs button').forEach(b=>{ b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
-  $$('.panelView').forEach(v=>v.classList.toggle('active',v.id==='pv-notebook'));
+  document.body.classList.add('nb-open');
   const nb=$('#nbBtn'); if(nb){ nb.classList.add('on'); nb.setAttribute('aria-pressed','true'); }
-  const _srb=$('#srBtn'); if(_srb){ _srb.classList.remove('on'); _srb.setAttribute('aria-pressed','false'); }
   nbSyncHead(); nbRender();
-  if(window.innerWidth<=860 && S.book) toggleFocus(true);
   announce('Study Notebook.');
+}
+function closeNotebook(){
+  nbUI.open=false;
+  document.body.classList.remove('nb-open');
+  const nb=$('#nbBtn'); if(nb){ nb.classList.remove('on'); nb.setAttribute('aria-pressed','false'); }
 }
 function nbSyncHead(){
   const mn=$('#nbModeNotes'), ms=$('#nbModeSketch');
@@ -3818,9 +3809,7 @@ const dz=$('#dropzone');
 dz.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f)openFile(f); });
 
 $('#homeBrand').onclick=goLibrary;
-$('#panelBtn').onclick=()=>{
-  if(document.body.classList.contains('nb-left')){ switchTab('learn'); announce('Learning tools opened.'); return; }
-  const open=!document.body.classList.contains('panel-open'); setPanel(open); announce(open?'Learning tools opened.':'Learning tools closed.'); };
+$('#panelBtn').onclick=()=>{ const open=!document.body.classList.contains('panel-open'); setPanel(open); announce(open?'Learning tools opened.':'Learning tools closed.'); };
 $('#ttsBtn').onclick=()=>{ raVisible=!raVisible; updateRaBarVis(); announce(raVisible?'Read aloud controls shown.':'Read aloud controls hidden.'); };
 $('#focusBtn').onclick=()=>toggleFocus();
 $('#exitReadBtn').onclick=goLibrary;
